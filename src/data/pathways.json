@@ -1,0 +1,120 @@
+{
+  "$comment": "Curated visa pathways. Sources verified 2026-09-08 against official government pages (immi.homeaffairs.gov.au, canada.ca IEC, uscis.gov H-2 list). eligibleNationalities: ISO-3166 alpha-2; null = open to all nationalities. Update lastVerifiedAt when re-checked.",
+  "pathways": [
+    {
+      "id": "au-462",
+      "name": "Work and Holiday visa (subclass 462)",
+      "type": "working-holiday",
+      "country": "AU",
+      "eligibleNationalities": ["AR","AT","BR","CN","CZ","EC","GR","HU","IN","ID","IL","LU","MY","MN","PG","PE","PH","PL","PT","SM","SG","SK","SI","ES","CH","TH","TR","US","UY","VN"],
+      "ageRange": "18–30",
+      "duration": "12 months",
+      "workRights": "Full work rights; max 6 months per employer (extensions for specified work)",
+      "officialUrl": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/work-holiday-462/first-work-holiday-462",
+      "notes": "Annual caps apply; some countries require education credentials or a ballot. Education requirement varies by country (degree or 2 years of undergraduate study for most).",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "au-417",
+      "name": "Working Holiday visa (subclass 417)",
+      "type": "working-holiday",
+      "country": "AU",
+      "eligibleNationalities": ["GB","CA","IE","FR","DE","IT","NL","BE","SE","NO","DK","FI","JP","KR","HK","TW"],
+      "ageRange": "18–30",
+      "duration": "12 months (extendable to 2–3 years with specified work)",
+      "workRights": "Full work rights; max 6 months per employer",
+      "officialUrl": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/work-holiday-417/working-holiday",
+      "notes": "Second and third year visas require specified regional work.",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "au-sid",
+      "name": "Skills in Demand visa (subclass 482)",
+      "type": "sponsorship",
+      "country": "AU",
+      "eligibleNationalities": null,
+      "ageRange": null,
+      "duration": "Up to 4 years",
+      "workRights": "Employer-sponsored; occupation must be on the relevant skills list; pathways to PR",
+      "officialUrl": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/skills-in-demand-482",
+      "notes": "Requires an approved employer sponsor — filter jobs by 'Visa support reported'.",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "ca-iec-wh",
+      "name": "International Experience Canada — Working Holiday",
+      "type": "working-holiday",
+      "country": "CA",
+      "eligibleNationalities": ["AU","AT","BE","CL","CR","HR","CZ","DK","EE","FI","FR","DE","GR","HK","IS","IE","IT","JP","LV","LT","LU","NL","NZ","NO","PL","PT","SM","SK","SI","KR","ES","SE","CH","TW","GB"],
+      "ageRange": "18–30 or 18–35 depending on country",
+      "duration": "Up to 12–24 months depending on country",
+      "workRights": "Open work permit; no job offer required",
+      "officialUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/iec.html",
+      "notes": "Annual pools are competitive; candidates enter a pool and receive invitations to apply.",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "ca-iec-yp",
+      "name": "International Experience Canada — Young Professionals",
+      "type": "temporary",
+      "country": "CA",
+      "eligibleNationalities": ["AU","AT","BE","CL","CR","HR","CZ","DK","EE","FI","FR","DE","GR","HK","IS","IE","IT","JP","LV","LT","LU","MX","NL","NZ","NO","PL","PT","SM","SK","SI","KR","ES","SE","CH","TW","GB"],
+      "ageRange": "18–29/30/35 depending on country",
+      "duration": "Up to 12–24 months depending on country",
+      "workRights": "Closed (employer-specific) work permit; a job offer in TEER 0–3 is required",
+      "officialUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/iec.html",
+      "notes": "Mexico is eligible for Young Professionals and International Co-op only (no Working Holiday).",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "ca-tfw",
+      "name": "Temporary Foreign Worker Program (LMIA-backed)",
+      "type": "sponsorship",
+      "country": "CA",
+      "eligibleNationalities": null,
+      "ageRange": null,
+      "duration": "Varies by stream (typically 1–3 years)",
+      "workRights": "Employer-specific permit; employer must obtain an LMIA or LMIA exemption",
+      "officialUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/temporary.html",
+      "notes": "Filter jobs by 'Visa support reported' to find employers used to hiring internationally.",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "ca-study",
+      "name": "Study permit — part-time work & co-op",
+      "type": "student",
+      "country": "CA",
+      "eligibleNationalities": null,
+      "ageRange": null,
+      "duration": "Length of the study program",
+      "workRights": "Up to 24 h/week off-campus during sessions; full-time during scheduled breaks; co-op permits for required internships",
+      "officialUrl": "https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada.html",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "us-h2b",
+      "name": "H-2B — Temporary Non-Agricultural Workers",
+      "type": "temporary",
+      "country": "US",
+      "eligibleNationalities": ["MX","PE","BR","CL","AR","ZA","ES","CO","MN","EC","BO","CR","PA","DO","GT","HN","NI","PY","UY"],
+      "ageRange": null,
+      "duration": "Up to 1 year, extendable to a maximum of 3 years",
+      "workRights": "Temporary employment with a petitioning US employer (DOL temporary labor certification required)",
+      "officialUrl": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/h-2b-temporary-non-agricultural-workers",
+      "notes": "Eligible-country list above is the subset most relevant to our audience; Mongolia is H-2B only. See the official page for the full list.",
+      "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "au-student",
+      "name": "Student visa (subclass 500) — work while studying",
+      "type": "student",
+      "country": "AU",
+      "eligibleNationalities": null,
+      "ageRange": null,
+      "duration": "Length of enrolment",
+      "workRights": "Up to 48 hours per fortnight during study; unlimited during scheduled breaks",
+      "officialUrl": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500",
+      "lastVerifiedAt": "2026-09-08"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+---
+import { localePath, useTranslations, languages, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale?: Locale;
+  path?: string;
+}
+
+const { locale = 'en', path = '/' } = Astro.props;
+const t = useTranslations(locale);
+
+const links = [
+  { href: '/', label: t('nav.home') },
+  { href: '/jobs', label: t('nav.jobs') },
+  { href: '/visa-pathways', label: t('nav.pathways') },
+  { href: '/about', label: t('nav.about') },
+];
+---
+
+<header class="sticky top-0 z-40 border-b border-graphite-800 bg-graphite-950/80 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
+    <a href={localePath(locale, '/')} class="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-graphite-100">
+      <svg viewBox="0 0 24 24" class="h-6 w-6 text-brand-500" fill="currentColor" aria-hidden="true">
+        <path d="M12 2 3 9l3 11h12l3-11-9-7Zm0 3.3L18.4 10 16.2 18H7.8L5.6 10 12 5.3ZM11 9h2v6h-2V9Z" />
+      </svg>
+      Labormine
+    </a>
+
+    <nav class="ml-auto hidden items-center gap-6 text-sm text-graphite-200 md:flex" aria-label="Main">
+      {links.map((l) => (
+        <a
+          href={localePath(locale, l.href)}
+          class="rounded-md px-2 py-1 transition-colors hover:text-brand-400"
+          aria-current={path === l.href ? 'page' : undefined}
+        >
+          {l.label}
+        </a>
+      ))}
+    </nav>
+
+    <details class="relative ml-auto md:ml-0">
+      <summary class="flex cursor-pointer items-center gap-1.5 rounded-full border border-graphite-700 px-3 py-1.5 text-sm text-graphite-200 hover:border-brand-500">
+        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z" />
+        </svg>
+        {languages[locale]}
+      </summary>
+      <div class="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-xl border border-graphite-700 bg-graphite-900 shadow-xl">
+        {
+          Object.entries(languages).map(([code, label]) => {
+            const target = code === 'en' ? path : `/${code}${path}`;
+            return (
+              <a
+                href={target}
+                hreflang={code}
+                class={`block px-4 py-2 text-sm transition-colors hover:bg-graphite-800 ${code === locale ? 'text-brand-400' : 'text-graphite-200'}`}
+              >
+                {label}
+              </a>
+            );
+          })
+        }
+      </div>
+    </details>
+  </div>
+
+  <nav class="border-t border-graphite-800/60 px-4 py-2 md:hidden" aria-label="Mobile">
+    <div class="flex gap-4 overflow-x-auto text-sm text-graphite-200">
+      {
+        links.map((l) => (
+          <a href={localePath(locale, l.href)} class="whitespace-nowrap py-1 hover:text-brand-400">
+            {l.label}
+          </a>
+        ))
+      }
+    </div>
+  </nav>
+</header>
+
+<script>
+  // Persist locale choice when the switcher is used (survives geo redirect)
+  document.querySelectorAll<HTMLAnchorElement>('header details a[hreflang]').forEach((a) => {
+    a.addEventListener('click', () => {
+      localStorage.setItem('lm-locale', a.getAttribute('hreflang') ?? 'en');
+    });
+  });
+</script>

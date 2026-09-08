@@ -1,0 +1,21 @@
+{
+  "_comment": "Curated, verified public job boards for mining companies. Every entry must resolve to a real, legal, public JSON feed. Platforms: greenhouse | lever | workable. NOTE: most large miners (BHP, Rio Tinto, Anglo American, Newmont, Glencore) run Workday / PageUp / SuccessFactors with no clean public JSON API — see ARCHITECTURE.md (Phase 2). Generic keyless APIs fill the gap.",
+  "boards": [
+    { "name": "KoBold Metals", "platform": "greenhouse", "slug": "koboldmetals", "hq": "US" },
+    { "name": "KoBold Metals DRC", "platform": "greenhouse", "slug": "koboldmetalsdrc", "hq": "CD" },
+    { "name": "KoBold Metals Zambia", "platform": "greenhouse", "slug": "zambold", "hq": "ZM" },
+    { "name": "Blue Moon Metals", "platform": "greenhouse", "slug": "bluemoonmetals", "hq": "CA" },
+    { "name": "Elk Valley Resources", "platform": "lever", "slug": "evr", "hq": "CA" }
+  ],
+  "generic": [
+    { "name": "Arbeitnow", "platform": "arbeitnow" },
+    { "name": "Remotive", "platform": "remotive" }
+  ],
+  "optionalKeyed": [
+    {
+      "name": "Adzuna",
+      "platform": "adzuna",
+      "note": "Enabled when ADZUNA_APP_ID and ADZUNA_APP_KEY env vars are set. Free tier."
+    }
+  ]
+}

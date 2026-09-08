@@ -1,0 +1,15 @@
+---
+import { useTranslations, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'en' } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<span
+  class="inline-flex items-center gap-1 rounded-full border border-brand-600/60 bg-brand-500/10 px-2.5 py-1 text-[11px] font-medium text-brand-400"
+>
+  ✦ {t('card.visa')}
+</span>

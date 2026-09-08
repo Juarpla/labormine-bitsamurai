@@ -1,0 +1,63 @@
+---
+import { useTranslations, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'en' } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<dialog
+  id="lm-drawer"
+  class="m-auto w-[min(92vw,560px)] rounded-2xl border border-graphite-700 bg-graphite-900 p-0 text-graphite-100"
+>
+  <div class="p-6">
+    <div class="flex items-start justify-between gap-4">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-500">{t('drawer.quick')}</p>
+      <button
+        id="lm-drawer-close"
+        class="rounded-full border border-graphite-700 px-3 py-1 text-sm text-graphite-300 hover:border-brand-500"
+        aria-label={t('drawer.close')}
+      >
+        ✕
+      </button>
+    </div>
+    <div id="lm-drawer-body" class="mt-4"></div>
+  </div>
+</dialog>
+
+<script define:vars={{ drawerT: { full: t('drawer.full'), apply: t('drawer.apply'), visaNote: t('drawer.visaNote') }, locale }}>
+  const dialog = document.getElementById('lm-drawer');
+  const body = document.getElementById('lm-drawer-body');
+
+  function openDrawer(job) {
+    const prefix = locale === 'en' ? '' : `/${locale}`;
+    body.innerHTML = `
+      <h3 class="font-display text-xl font-semibold leading-snug">${job.title}</h3>
+      <p class="mt-2 text-sm text-graphite-200">${job.company} · ${job.city ?? ''} ${job.salaryText ? ' · ' + job.salaryText : ''}</p>
+      ${job.excerpt ? `<p class="mt-4 text-sm leading-relaxed text-graphite-400">${job.excerpt}</p>` : ''}
+      <p class="mt-4 rounded-xl border border-graphite-700 bg-graphite-850 p-3 text-xs text-graphite-400">${drawerT.visaNote}</p>
+      <div class="mt-5 flex flex-wrap gap-3">
+        <a href="${prefix}/jobs/${job.slug}" class="rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-graphite-950 hover:bg-brand-400">${drawerT.full}</a>
+        <a href="${job.url}" target="_blank" rel="noopener nofollow" class="rounded-full border border-graphite-600 px-4 py-2 text-sm text-graphite-100 hover:border-brand-500">${drawerT.apply} ↗</a>
+      </div>`;
+    dialog.showModal();
+  }
+
+  document.getElementById('lm-drawer-close')?.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') dialog.close();
+  });
+  // Delegate: any element with data-drawer-job opens the drawer
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-drawer-job]');
+    if (!el) return;
+    e.preventDefault();
+    const job = window.__lmIndex?.find((j) => j.id === el.dataset.drawerJob);
+    if (job) openDrawer(job);
+  });
+</script>

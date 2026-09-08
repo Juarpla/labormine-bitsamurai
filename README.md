@@ -1,46 +1,25 @@
-# Astro Starter Kit: Basics
+# Labormine
 
-```sh
-npm create astro@latest -- --template basics
+Global mining-jobs hub by Bit SamurAI. Real listings from public employer boards,
+matched to your nationality: your country first, then reported visa support,
+official visa pathways (working holiday / IEC / H-2B / sponsorship), and remote roles.
+
+- Docs: [ARCHITECTURE.md](./ARCHITECTURE.md) · [DESIGN.md](./DESIGN.md) · agent rules in [AGENTS.md](./AGENTS.md)
+
+## Quick start
+
+Requires pnpm (≥ 12) — `corepack enable` or see https://pnpm.io/installation.
+
+```bash
+pnpm install
+node scripts/ingest.mjs   # fetch real jobs → src/data/jobs.json
+pnpm dev                  # http://localhost:4321
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Environment (all optional)
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+```bash
+PUBLIC_ADSENSE_CLIENT=ca-pub-xxxx   # real AdSense unit rendering (prod)
+ADZUNA_APP_ID=...                   # extra source at ingest
+ADZUNA_APP_KEY=...
 ```
-
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).

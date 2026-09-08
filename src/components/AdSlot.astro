@@ -1,0 +1,46 @@
+---
+import { useTranslations, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale?: Locale;
+  /** AdSense slot id. Required when PUBLIC_ADSENSE_CLIENT is set in production. */
+  slotId?: string;
+  format?: 'auto' | 'fluid' | 'horizontal';
+  layoutKey?: string;
+  class?: string;
+}
+
+const { locale = 'en', slotId, format = 'auto', layoutKey, class: className = '' } = Astro.props;
+const t = useTranslations(locale);
+const client = import.meta.env.PUBLIC_ADSENSE_CLIENT as string | undefined;
+const live = Boolean(client && import.meta.env.PROD && slotId);
+---
+
+<aside class:list={['ad-wrap my-8', className]} aria-label="Advertisement">
+  <span class="ad-label">{t('ads.label')}</span>
+  {
+    live ? (
+      <ins
+        class="adsbygoogle block"
+        style="display:block"
+        data-ad-client={client}
+        data-ad-slot={slotId}
+        data-ad-format={format}
+        data-ad-layout-key={layoutKey}
+        data-full-width-responsive="true"
+      />
+    ) : (
+      <div class="flex h-24 items-center justify-center text-xs text-graphite-600 sm:h-32">
+        AdSense slot {slotId ?? '(unassigned)'} — {t('ads.label')} placeholder
+      </div>
+    )
+  }
+</aside>
+
+{
+  live && (
+    <script is:inline>
+      (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  )
+}

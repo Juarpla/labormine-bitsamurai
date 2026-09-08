@@ -1,0 +1,49 @@
+name: Refresh job data
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # daily 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Ingest job boards
+        run: node scripts/ingest.mjs
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+
+      - name: Commit refreshed feed (if changed)
+        run: |
+          git config user.name "labormine-bot"
+          git config user.email "bot@labormine.com"
+          if [[ -n "$(git status --porcelain src/data/jobs.json)" ]]; then
+            git add src/data/jobs.json
+            git commit -m "chore(data): refresh jobs feed"
+            git push
+          else
+            echo "No changes in jobs feed"
+          fi
+
+      # Only needed if Cloudflare Pages is NOT connected via Git;
+      # when connected to the repo, the push above triggers the build.
+      - name: Trigger Cloudflare deploy hook (optional)
+        if: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK != '' }}
+        run: curl -sf -X POST "$CLOUDFLARE_DEPLOY_HOOK"
+        env:
+          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}

@@ -1,0 +1,22 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import JobDetailView from '../../components/pages/JobDetailView.astro';
+import { useTranslations } from '../../lib/i18n';
+import { jobs, getJob } from '../../lib/jobs';
+
+export function getStaticPaths() {
+  return jobs.map((job) => ({ params: { slug: job.slug }, props: { job } }));
+}
+
+const { job } = Astro.props;
+const t = useTranslations('en');
+---
+
+<Layout
+  title={`${job.title} — ${job.company} | Labormine`}
+  description={job.excerpt}
+  locale="en"
+  path={`/jobs/${job.slug}`}
+>
+  <JobDetailView job={job} locale="en" />
+</Layout>

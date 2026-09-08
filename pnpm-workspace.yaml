@@ -1,0 +1,7 @@
+# pnpm settings (single-project workspace).
+# Build scripts are blocked by default since pnpm 11 (strictDepBuilds);
+# these two deps need lifecycle scripts (esbuild binary validation,
+# workerd binary for the Cloudflare adapter).
+allowBuilds:
+  esbuild: true
+  workerd: true

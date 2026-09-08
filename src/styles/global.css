@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+@theme {
+  /* Labormine — dark industrial premium (see DESIGN.md) */
+  --color-graphite-950: #0a0b0e;
+  --color-graphite-900: #10131a;
+  --color-graphite-850: #141822;
+  --color-graphite-800: #1a1f2b;
+  --color-graphite-700: #262d3d;
+  --color-graphite-600: #3a4356;
+  --color-graphite-400: #7a8598;
+  --color-graphite-200: #c6cedd;
+  --color-graphite-100: #e9edf4;
+
+  --color-brand-300: #ffd57a;
+  --color-brand-400: #ffc247;
+  --color-brand-500: #f5a623;
+  --color-brand-600: #d18a12;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-graphite-950);
+  color: var(--color-graphite-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-brand-500);
+  color: var(--color-graphite-950);
+}
+
+/* --- Scroll reveal (IntersectionObserver) --- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s cubic-bezier(0.2, 0.6, 0.2, 1),
+    transform 0.6s cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* CSS scroll-driven animation as progressive enhancement */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+      transition: none;
+      opacity: 1; /* animation drives opacity; keep base visible to avoid double-hiding */
+    }
+  }
+}
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* --- Cards --- */
+.job-card {
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+.job-card:hover {
+  border-color: var(--color-brand-500);
+  transform: translateY(-2px);
+}
+
+/* --- Native ads: visually integrated, always labeled (AdSense policy) --- */
+.ad-wrap {
+  border: 1px dashed var(--color-graphite-700);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+.ad-label {
+  display: inline-block;
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-graphite-400);
+  padding: 0.25rem 0.625rem;
+  border-bottom: 1px dashed var(--color-graphite-700);
+}
+
+/* Sticky chapter text */
+.sticky-text {
+  position: sticky;
+  top: 18vh;
+}
+
+/* Skeleton for client-hydrated chapters */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-graphite-850) 25%, var(--color-graphite-800) 50%, var(--color-graphite-850) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 0.75rem;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+dialog::backdrop {
+  background: rgb(10 11 14 / 0.7);
+  backdrop-filter: blur(4px);
+}

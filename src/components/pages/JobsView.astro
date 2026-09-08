@@ -1,0 +1,178 @@
+---
+import AdSlot from '../AdSlot.astro';
+import JobDrawer from '../JobDrawer.astro';
+import { useTranslations, miningCountries, countryName, GLOBAL, type Locale } from '../../lib/i18n';
+import { jobs, jobIndex, categoryOrder } from '../../lib/jobs';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'en' } = Astro.props;
+const t = useTranslations(locale);
+
+const index = jobIndex();
+const presentCountries = [...new Set(jobs.map((j) => j.country))];
+const presentCategories = [...new Set(jobs.map((j) => j.category))].sort(
+  (a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
+);
+
+const payload = JSON.stringify({
+  index,
+  countMsg: t('jobs.count', { n: '{n}' }),
+});
+---
+
+<section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+  <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('jobs.title')}</h1>
+  <p class="mt-4 max-w-2xl text-graphite-400">{t('jobs.lead')}</p>
+
+  <div class="mt-10 grid gap-3 rounded-2xl border border-graphite-800 bg-graphite-900/60 p-4 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="flex flex-col gap-1">
+      <label for="f-country" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.country')}</label>
+      <select id="f-country" class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
+        <option value="">{t('jobs.filter.all')}</option>
+        {presentCountries.map((c) => <option value={c}>{c === GLOBAL ? t('card.global') : countryName(c)}</option>)}
+      </select>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label for="f-category" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.category')}</label>
+      <select id="f-category" class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
+        <option value="">{t('jobs.filter.all')}</option>
+        {presentCategories.map((c) => <option value={c}>{c}</option>)}
+      </select>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label for="f-type" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.type')}</label>
+      <select id="f-type" class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
+        <option value="">{t('jobs.filter.all')}</option>
+        <option value="onsite">{t('jobs.type.onsite')}</option>
+        <option value="remote">{t('jobs.type.remote')}</option>
+      </select>
+    </div>
+    <div class="flex flex-col gap-1">
+      <label for="f-search" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.search')}</label>
+      <input
+        id="f-search"
+        type="search"
+        placeholder={t('jobs.filter.search')}
+        class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500"
+      />
+    </div>
+    <div class="flex items-end gap-3">
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-graphite-200">
+        <input id="f-visa" type="checkbox" class="h-4 w-4 accent-brand-500" />
+        {t('jobs.filter.visa')}
+      </label>
+      <button id="f-clear" class="ml-auto text-xs text-graphite-400 underline hover:text-brand-400">{t('jobs.clear')}</button>
+    </div>
+  </div>
+
+  <p id="f-count" class="mt-6 text-sm text-graphite-400">{t('jobs.count', { n: jobs.length })}</p>
+
+  <div id="jobs-grid" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {jobs.map((job, i) => (
+      <Fragment>
+        <article
+          class="job-card flex flex-col gap-3 rounded-2xl border border-graphite-800 bg-graphite-900 p-5"
+          data-country={job.country}
+          data-category={job.category}
+          data-type={job.remote ? 'remote' : 'onsite'}
+          data-visa={job.visaReported ? '1' : '0'}
+          data-search={`${job.title} ${job.company} ${job.city ?? ''} ${job.locationRaw}`.toLowerCase()}
+        >
+          <div class="flex items-start justify-between gap-3">
+            <h2 class="font-display text-lg font-semibold leading-snug text-graphite-100">
+              <a
+                href={locale === 'en' ? `/jobs/${job.slug}` : `/${locale}/jobs/${job.slug}`}
+                data-drawer-job={job.id}
+                class="hover:text-brand-400"
+              >
+                {job.title}
+              </a>
+            </h2>
+            {job.visaReported && (
+              <span class="shrink-0 rounded-full border border-brand-600/60 bg-brand-500/10 px-2.5 py-1 text-[11px] font-medium text-brand-400">
+                ✦ {t('card.visa')}
+              </span>
+            )}
+          </div>
+          <p class="text-sm text-graphite-200">
+            <span class="font-medium">{job.company}</span>
+            <span class="text-graphite-400"> · {job.city ?? t('card.global')} · {countryName(job.country)}</span>
+          </p>
+          <div class="mt-auto flex flex-wrap items-center gap-2 text-xs text-graphite-400">
+            <span class="rounded-full bg-graphite-800 px-2.5 py-1">{job.category}</span>
+            {job.remote && <span class="rounded-full bg-graphite-800 px-2.5 py-1 text-brand-300">↗ {t('card.remote')}</span>}
+            <time datetime={job.postedAt} class="ml-auto">{job.postedAt}</time>
+          </div>
+        </article>
+        {(i + 1) % 9 === 0 && (
+          <AdSlot
+            slotId={`jobs-infeed-${i}`}
+            format="fluid"
+            layoutKey="-fb+5w+4e-db+86"
+            locale={locale}
+            class="sm:col-span-2 lg:col-span-3"
+          />
+        )}
+      </Fragment>
+    ))}
+  </div>
+
+  <p id="jobs-empty" class="mt-10 hidden text-center text-graphite-400">{t('jobs.empty')}</p>
+</section>
+
+<JobDrawer locale={locale} />
+
+<script type="application/json" id="lm-jobs-data" set:html={payload} />
+
+<script>
+  const countrySel = document.getElementById('f-country') as HTMLSelectElement;
+  const categorySel = document.getElementById('f-category') as HTMLSelectElement;
+  const typeSel = document.getElementById('f-type') as HTMLSelectElement;
+  const visaCb = document.getElementById('f-visa') as HTMLInputElement;
+  const searchInput = document.getElementById('f-search') as HTMLInputElement;
+  const clearBtn = document.getElementById('f-clear') as HTMLButtonElement;
+  const countEl = document.getElementById('f-count')!;
+  const emptyEl = document.getElementById('jobs-empty')!;
+  const grid = document.getElementById('jobs-grid')!;
+
+  const data = JSON.parse(document.getElementById('lm-jobs-data')!.textContent!);
+  (window as any).__lmIndex = data.index;
+
+  function applyFilters() {
+    let visible = 0;
+    const cards = grid.querySelectorAll<HTMLElement>('article[data-country]');
+    const country = countrySel.value;
+    const category = categorySel.value;
+    const type = typeSel.value;
+    const visa = visaCb.checked;
+    const q = searchInput.value.trim().toLowerCase();
+
+    cards.forEach((card) => {
+      let show = true;
+      if (country && card.dataset.country !== country) show = false;
+      if (category && card.dataset.category !== category) show = false;
+      if (type && card.dataset.type !== type) show = false;
+      if (visa && card.dataset.visa !== '1') show = false;
+      if (q && !card.dataset.search.includes(q)) show = false;
+      card.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+
+    countEl.textContent = data.countMsg.replace('{n}', String(visible));
+    emptyEl.classList.toggle('hidden', visible !== 0);
+  }
+
+  [countrySel, categorySel, typeSel].forEach((el) => el.addEventListener('change', applyFilters));
+  visaCb.addEventListener('change', applyFilters);
+  searchInput.addEventListener('input', applyFilters);
+  clearBtn.addEventListener('click', () => {
+    countrySel.value = '';
+    categorySel.value = '';
+    typeSel.value = '';
+    visaCb.checked = false;
+    searchInput.value = '';
+    applyFilters();
+  });
+</script>

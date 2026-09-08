@@ -1,23 +1,139 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { localePath, type Locale } from '../lib/i18n';
+import { useTranslations } from '../lib/i18n';
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+interface Props {
+  title: string;
+  description: string;
+  locale?: Locale;
+  /** Relative path of the current page, used for canonical + locale alternates */
+  path?: string;
+}
+
+const { title, description, locale = 'en', path = '/' } = Astro.props;
+const t = useTranslations(locale);
+const site = Astro.site ?? new URL('https://labormine.com');
+const canonical = new URL(localePath(locale, path), site);
+const adsClient = import.meta.env.PUBLIC_ADSENSE_CLIENT as string | undefined;
+
+const ogImage = new URL('/favicon.svg', site).toString();
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={new URL(localePath('en', path), site)} />
+    <link rel="alternate" hreflang="es" href={new URL(localePath('es', path), site)} />
+    <link rel="alternate" hreflang="pt" href={new URL(localePath('pt', path), site)} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <meta property="og:site_name" content="Labormine" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    {adsClient && (
+      <script
+        is:inline
+        async
+        src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsClient}`}
+        crossorigin="anonymous"
+      ></script>
+    )}
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <Header locale={locale} path={path} />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer locale={locale} />
+
+    <script>
+      // --- Reveal on scroll (IntersectionObserver) ---
+      const els = document.querySelectorAll('.reveal');
+      if ('IntersectionObserver' in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-visible');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { threshold: 0.15 }
+        );
+        els.forEach((el) => io.observe(el));
+      } else {
+        els.forEach((el) => el.classList.add('is-visible'));
+      }
+
+      // --- Geo bootstrap: detect country, suggest locale ---
+      type Labormine = {
+        country: string | null;
+        nationality: string | null;
+        locale: string;
+      };
+      const stored = {
+        country: localStorage.getItem('lm-country'),
+        nationality: localStorage.getItem('lm-nationality'),
+        locale: localStorage.getItem('lm-locale'),
+      };
+      const current = document.documentElement.lang || 'en';
+
+      async function bootstrap() {
+        if (stored.country) {
+          window.Labormine = {
+            country: stored.country,
+            nationality: stored.nationality,
+            locale: current,
+          };
+          document.dispatchEvent(new CustomEvent('lm:geo'));
+          return;
+        }
+        try {
+          const res = await fetch('/api/geo');
+          const data = await res.json();
+          localStorage.setItem('lm-country', data.country ?? 'GLOBAL');
+          window.Labormine = {
+            country: data.country ?? 'GLOBAL',
+            nationality: stored.nationality,
+            locale: current,
+          };
+          document.dispatchEvent(new CustomEvent('lm:geo'));
+          // Suggest locale once, only when different from current
+          if (!stored.locale && data.suggestedLocale && data.suggestedLocale !== current) {
+            const here = new URL(location.href);
+            const rest = here.pathname.replace(/^\/(en|es|pt)/, '');
+            const target =
+              data.suggestedLocale === 'en' ? rest : `/${data.suggestedLocale}${rest}`;
+            history.replaceState(null, '', target);
+            document.dispatchEvent(new CustomEvent('lm:locale', { detail: data.suggestedLocale }));
+          }
+        } catch {
+          window.Labormine = { country: 'GLOBAL', nationality: stored.nationality, locale: current };
+          document.dispatchEvent(new CustomEvent('lm:geo'));
+        }
+      }
+      bootstrap();
+    </script>
+  </body>
+</html>

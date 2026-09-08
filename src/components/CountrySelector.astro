@@ -1,0 +1,62 @@
+---
+import { miningCountries, GLOBAL, countryName, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale?: Locale;
+  mode: 'country' | 'nationality';
+  options?: { code: string; name: string }[]; // for nationality mode
+  value?: string;
+  label: string;
+  id: string;
+}
+
+const { locale = 'en', mode, options, value = '', label, id } = Astro.props;
+const isCountry = mode === 'country';
+---
+
+<div class="flex flex-col gap-1.5">
+  <label for={id} class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{label}</label>
+  {
+    isCountry ? (
+      <select
+        id={id}
+        data-lm-country
+        class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2.5 text-sm text-graphite-100 outline-none focus:border-brand-500"
+      >
+        <option value={GLOBAL} selected={value === GLOBAL || value === ''}>
+          {countryName(GLOBAL)}
+        </option>
+        {miningCountries.map((c) => (
+          <option value={c.code} selected={value === c.code}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <select
+        id={id}
+        data-lm-nationality
+        class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2.5 text-sm text-graphite-100 outline-none focus:border-brand-500"
+      >
+        <option value="">—</option>
+        {options?.map((o) => (
+          <option value={o.code} selected={value === o.code}>
+            {o.name}
+          </option>
+        ))}
+      </select>
+    )
+  }
+</div>
+
+<script>
+  function bind(select: HTMLSelectElement | null, key: string) {
+    select?.addEventListener('change', () => {
+      if (select.value) localStorage.setItem(key, select.value);
+      else localStorage.removeItem(key);
+      location.reload();
+    });
+  }
+  bind(document.querySelector('[data-lm-country]'), 'lm-country');
+  bind(document.querySelector('[data-lm-nationality]'), 'lm-nationality');
+</script>

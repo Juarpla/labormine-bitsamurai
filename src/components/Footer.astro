@@ -1,0 +1,34 @@
+---
+import { localePath, useTranslations, type Locale } from '../lib/i18n';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'en' } = Astro.props;
+const t = useTranslations(locale);
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-graphite-800 bg-graphite-900/60">
+  <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3">
+    <div>
+      <p class="font-display text-lg font-semibold text-graphite-100">⛏ Labormine</p>
+      <p class="mt-2 max-w-xs text-sm text-graphite-400">{t('footer.tagline')}</p>
+      <p class="mt-2 text-xs text-graphite-400">{t('footer.ownership')}</p>
+    </div>
+    <div class="text-sm">
+      <ul class="space-y-2 text-graphite-200">
+        <li><a class="hover:text-brand-400" href={localePath(locale, '/jobs')}>{t('nav.jobs')}</a></li>
+        <li><a class="hover:text-brand-400" href={localePath(locale, '/visa-pathways')}>{t('nav.pathways')}</a></li>
+        <li><a class="hover:text-brand-400" href={localePath(locale, '/about')}>{t('footer.about')}</a></li>
+        <li><a class="hover:text-brand-400" href={localePath(locale, '/privacy')}>{t('footer.privacy')}</a></li>
+        <li><a class="hover:text-brand-400" href={localePath(locale, '/contact')}>{t('footer.contact')}</a></li>
+      </ul>
+    </div>
+    <div class="text-xs leading-relaxed text-graphite-400">
+      <p>{t('footer.disclaimer')}</p>
+      <p class="mt-2">{t('footer.adsDisclosure')}</p>
+      <p class="mt-4">{t('footer.rights', { year })}</p>
+    </div>
+  </div>
+</footer>
