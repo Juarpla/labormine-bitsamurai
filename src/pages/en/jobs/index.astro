@@ -1,0 +1,11 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import JobsView from '../../../components/pages/JobsView.astro';
+import { useTranslations } from '../../../lib/i18n';
+
+const t = useTranslations('en');
+---
+
+<Layout title={`${t('jobs.title')} — Labormine`} description={t('jobs.lead')} locale="en" path="/jobs">
+  <JobsView locale="en" />
+</Layout>

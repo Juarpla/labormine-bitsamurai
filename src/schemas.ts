@@ -28,6 +28,14 @@ export const JobSchema = z.object({
   postedAt: z.string(),
   url: z.string().url(),
   description: z.string(),
+  /** Auto-translated job titles (descriptions are never translated). */
+  translations: z
+    .object({
+      es: z.string().optional(),
+      en: z.string().optional(),
+      pt: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const JobFileSchema = z.object({

@@ -13,7 +13,7 @@ interface Props {
   path?: string;
 }
 
-const { title, description, locale = 'en', path = '/' } = Astro.props;
+const { title, description, locale = 'es', path = '/' } = Astro.props;
 const t = useTranslations(locale);
 const site = Astro.site ?? new URL('https://labormine.com');
 const canonical = new URL(localePath(locale, path), site);
@@ -97,7 +97,7 @@ const ogImage = new URL('/favicon.svg', site).toString();
         nationality: localStorage.getItem('lm-nationality'),
         locale: localStorage.getItem('lm-locale'),
       };
-      const current = document.documentElement.lang || 'en';
+      const current = document.documentElement.lang || 'es';
 
       async function bootstrap() {
         if (stored.country) {
@@ -119,12 +119,12 @@ const ogImage = new URL('/favicon.svg', site).toString();
             locale: current,
           };
           document.dispatchEvent(new CustomEvent('lm:geo'));
-          // Suggest locale once, only when different from current
+          // Suggest locale once, only when different from current (es lives at the root)
           if (!stored.locale && data.suggestedLocale && data.suggestedLocale !== current) {
             const here = new URL(location.href);
             const rest = here.pathname.replace(/^\/(en|es|pt)/, '');
             const target =
-              data.suggestedLocale === 'en' ? rest : `/${data.suggestedLocale}${rest}`;
+              data.suggestedLocale === 'es' ? rest : `/${data.suggestedLocale}${rest}`;
             history.replaceState(null, '', target);
             document.dispatchEvent(new CustomEvent('lm:locale', { detail: data.suggestedLocale }));
           }

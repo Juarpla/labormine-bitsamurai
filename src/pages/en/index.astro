@@ -1,0 +1,11 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import HomeView from '../../components/pages/HomeView.astro';
+import { useTranslations } from '../../lib/i18n';
+
+const t = useTranslations('en');
+---
+
+<Layout title={`Labormine — ${t('hero.kicker')}`} description={t('hero.subtitle')} locale="en" path="/">
+  <HomeView locale="en" />
+</Layout>

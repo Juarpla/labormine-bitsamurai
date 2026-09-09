@@ -11,8 +11,8 @@ export default defineConfig({
   adapter: cloudflare({ platformProxy: { enabled: true } }),
   integrations: [sitemap()],
   i18n: {
-    defaultLocale: 'en',
-    locales: ['en', 'es', 'pt'],
+    defaultLocale: 'es',
+    locales: ['es', 'en', 'pt'],
     prefixDefaultLocale: false,
   },
   vite: {

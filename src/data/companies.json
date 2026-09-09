@@ -1,5 +1,6 @@
 {
-  "_comment": "Curated, verified public job boards for mining companies. Every entry must resolve to a real, legal, public JSON feed. Platforms: greenhouse | lever | workable. NOTE: most large miners (BHP, Rio Tinto, Anglo American, Newmont, Glencore) run Workday / PageUp / SuccessFactors with no clean public JSON API — see ARCHITECTURE.md (Phase 2). Generic keyless APIs fill the gap.",
+  "_comment": "Curated, verified public job sources for mining companies and boards. Every entry must resolve to a real, public, keyless feed or page. Platforms: greenhouse | lever | workable (boards); arbeitnow | remotive (generic); adzuna (optional keyed); direct[] platforms: scc-capper | hiringroom | sapsf-csb | oracle-hcm | pageup | jobiqo | brunel | globe247 | camining | jobbank | pnet | computrabajo | navent | smartrecruiters | eightfold | taleo-rss | empleosmineros; linkedin (optional keyed via APIFY_TOKEN). Sources are scraped read-only, respecting robots.txt and crawl-delays. See ARCHITECTURE.md §3.",
+  "maxPerSource": 1500,
   "boards": [
     { "name": "KoBold Metals", "platform": "greenhouse", "slug": "koboldmetals", "hq": "US" },
     { "name": "KoBold Metals DRC", "platform": "greenhouse", "slug": "koboldmetalsdrc", "hq": "CD" },
@@ -17,5 +18,70 @@
       "platform": "adzuna",
       "note": "Enabled when ADZUNA_APP_ID and ADZUNA_APP_KEY env vars are set. Free tier."
     }
-  ]
+  ],
+  "direct": [
+    { "name": "Southern Copper", "platform": "scc-capper", "url": "https://capper.southernperu.com.pe/capper/ListadoOfertas.aspx?tipo=1", "endpoint": "https://capper.southernperu.com.pe/capper/ListadoOfertas.aspx/GetListOfertas", "country": "PE", "company": "Southern Copper", "ua": "browser" },
+
+    { "name": "Minera Chinalco Perú", "platform": "hiringroom", "url": "https://minerachinalco.hiringroom.com", "company": "Minera Chinalco Perú", "ua": "browser" },
+    { "name": "Cerro Verde", "platform": "hiringroom", "url": "https://cerroverde.hiringroom.com", "company": "Cerro Verde", "ua": "browser" },
+    { "name": "Hochschild Mining", "platform": "hiringroom", "url": "https://minerasantacruz.hiringroom.com", "company": "Hochschild Mining", "ua": "browser" },
+
+    { "name": "Minsur", "platform": "sapsf-csb", "url": "https://oportunidades-laborales.com/minsur/", "sitemap": "https://oportunidades-laborales.com/sitemap.xml", "pathFilter": "/minsur/", "company": "Minsur", "ua": "browser" },
+    { "name": "Codelco", "platform": "sapsf-csb", "url": "https://empleos.codelco.cl", "sitemap": "https://empleos.codelco.cl/sitemap.xml", "company": "Codelco", "ua": "browser" },
+    { "name": "Antamina", "platform": "sapsf-csb", "url": "https://mastalento.antamina.com", "sitemap": "https://mastalento.antamina.com/sitemap.xml", "company": "Antamina", "ua": "browser" },
+    { "name": "BHP", "platform": "sapsf-csb", "url": "https://careers.bhp.com", "sitemap": "https://careers.bhp.com/sitemap.xml", "company": "BHP", "ua": "browser" },
+    { "name": "Freeport-McMoRan", "platform": "sapsf-csb", "url": "https://jobs.fcx.com", "sitemap": "https://jobs.fcx.com/sitemap.xml", "company": "Freeport-McMoRan", "ua": "browser" },
+    { "name": "Fortescue", "platform": "sapsf-csb", "url": "https://careers-apply.fortescue.com", "sitemap": "https://careers-apply.fortescue.com/sitemap.xml", "company": "Fortescue", "ua": "browser" },
+    { "name": "Woodside", "platform": "sapsf-csb", "url": "https://careers.woodside.com.au", "sitemap": "https://careers.woodside.com.au/sitemap.xml", "company": "Woodside", "ua": "browser" },
+    { "name": "Teck", "platform": "sapsf-csb", "url": "https://jobs.teck.com", "sitemap": "https://jobs.teck.com/sitemap.xml", "company": "Teck", "ua": "browser" },
+    { "name": "Kinross Gold", "platform": "sapsf-csb", "url": "https://jobs.kinross.com", "sitemap": "https://jobs.kinross.com/sitemap.xml", "company": "Kinross Gold", "ua": "browser" },
+
+    { "name": "The Redpath Group", "platform": "oracle-hcm", "host": "https://fa-evvx-saasfaprod1.fa.ocs.oraclecloud.com", "siteNumber": "CX_1", "siteSlug": "The-Redpath-Group", "company": "The Redpath Group", "ua": "browser" },
+    { "name": "Barrick Gold", "platform": "oracle-hcm", "host": "https://ehkn.fa.ca2.oraclecloud.com", "siteNumber": "CX_1001", "siteSlug": "CX_1001", "publicBase": "https://jobs.barrick.com", "company": "Barrick Gold", "ua": "browser" },
+
+    { "name": "MMG (Las Bambas)", "platform": "pageup", "url": "https://careers.mmg.com/jobs/search/results?category=las+bambas", "company": "MMG Las Bambas", "cap": 200, "delayMs": 5000, "ua": "browser" },
+
+    { "name": "Careermine", "platform": "jobiqo", "url": "https://www.careermine.com", "sitemap": "https://www.careermine.com/sitemap.xml", "company": "Careermine", "cap": 150, "delayMs": 10000, "ua": "browser", "note": "Crawl-delay 10s — first runs fetch ~150 newest; grows by sitemap deltas on later runs. Raise cap once hydrated." },
+
+    { "name": "Brunel", "platform": "brunel", "sitemap": "https://www.brunel.net/en/sitemap-jobs.xml", "url": "https://www.brunel.net/en", "company": "Brunel", "ua": "browser" },
+    { "name": "Globe 24-7", "platform": "globe247", "url": "https://globe24-7.com/jobs", "company": "Globe 24-7", "ua": "browser" },
+    { "name": "CA Mining", "platform": "camining", "url": "https://camining.com", "company": "CA Mining", "ua": "browser" },
+
+    { "name": "Job Bank Canadá", "platform": "jobbank", "url": "https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=mining&sort=D", "company": "Job Bank", "country": "CA", "delayMs": 5000, "ua": "browser" },
+
+    { "name": "PNet", "platform": "pnet", "url": "https://www.pnet.co.za/jobs/mining", "company": "PNet", "country": "ZA", "cap": 600, "ua": "browser" },
+
+    { "name": "Computrabajo Perú", "platform": "computrabajo", "url": "https://pe.computrabajo.com/trabajo-de-mineria", "company": "Computrabajo", "country": "PE", "cap": 200, "ua": "browser" },
+    { "name": "Computrabajo Chile", "platform": "computrabajo", "url": "https://cl.computrabajo.com/trabajo-de-mineria", "company": "Computrabajo", "country": "CL", "cap": 200, "ua": "browser" },
+    { "name": "Computrabajo México", "platform": "computrabajo", "url": "https://mx.computrabajo.com/trabajo-de-mineria", "company": "Computrabajo", "country": "MX", "cap": 200, "ua": "browser" },
+
+    { "name": "Bumeran Perú", "platform": "navent", "host": "https://www.bumeran.com.pe", "siteId": "BMPE", "company": "Bumeran Perú", "country": "PE", "ua": "browser" },
+    { "name": "Laborum Chile", "platform": "navent", "host": "https://www.laborum.cl", "siteId": "BMCL", "company": "Laborum", "country": "CL", "ua": "browser" },
+
+    { "name": "Anglo American", "platform": "smartrecruiters", "companyId": "AngloAmericanDeBeersGroup", "company": "Anglo American", "ua": "browser" },
+    { "name": "Vale", "platform": "eightfold", "host": "https://vale.eightfold.ai", "domain": "vale.com", "company": "Vale", "ua": "browser" },
+    { "name": "Agnico Eagle", "platform": "taleo-rss", "url": "https://agnicoeagle.taleo.net/careersection/feed/joblist.rss?lang=en&portal=101430233&searchtype=3&f=null&s=3%7CD&a=null&multiline=false", "company": "Agnico Eagle", "ua": "browser" },
+
+    { "name": "EmpleosMineros.cl", "platform": "empleosmineros", "url": "https://empleosmineros.cl/api/empleos", "company": "EmpleosMineros.cl", "country": "CL", "ua": "browser" }
+  ],
+  "linkedin": {
+    "platform": "apify-linkedin",
+    "actor": "kaix~linkedin-jobs-scraper",
+    "fallbackActor": "cheap_scraper~linkedin-job-scraper",
+    "idsFile": "src/data/linkedin-company-ids.json",
+    "cap": 200,
+    "_comment": "Enabled when APIFY_TOKEN is set. Top 50 MINING.COM (data 2026-08-31) as the reference seed of legal mining companies — not an exhaustive limit. Fetched via Apify guest-mode actors (no LinkedIn account involved). Cost guard: cheap_scraper bills ~$0.70/1k results → cap 200/day ≈ $4.2/mo fits the Free plan ($5 credits). With company IDs in linkedin-company-ids.json, kaix (~$0.10/1k) fits cap 1000 in the same free tier.",
+    "companies": [
+      "BHP", "Rio Tinto", "Southern Copper Corporation", "Zijin Mining", "Newmont Corporation",
+      "Freeport-McMoRan", "Agnico Eagle Mines", "Glencore", "Barrick Gold", "Wheaton Precious Metals",
+      "Ma'aden", "Vale", "Anglo American", "CMOC Group", "AngloGold Ashanti",
+      "Antofagasta Minerals", "Franco-Nevada", "Cameco", "Gold Fields", "Fortescue Metals Group",
+      "Kinross Gold", "Nutrien", "Teck Resources", "Fresnillo plc", "First Quantum Minerals",
+      "Hindustan Zinc", "Northern Star Resources", "Shandong Gold", "Norilsk Nickel", "Evolution Mining",
+      "Lundin Mining", "SQM", "Valterra Platinum", "Royal Gold", "Managem",
+      "Jiangxi Copper", "China Northern Rare Earth", "Pan American Silver", "Coeur Mining", "Kazatomprom",
+      "Zhongjin Gold", "KGHM", "Amman Mineral", "Lundin Gold", "South32",
+      "Boliden", "Polyus", "Albemarle", "Ganfeng Lithium", "MMG"
+    ]
+  }
 }

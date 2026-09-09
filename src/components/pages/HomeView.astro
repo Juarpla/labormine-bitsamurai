@@ -177,7 +177,7 @@ const payload = JSON.stringify({
   };
   const data = JSON.parse(document.getElementById('lm-data')!.textContent!);
   const M = data.msgs;
-  const prefix = data.locale === 'en' ? '' : `/${data.locale}`;
+  const prefix = data.locale === 'es' ? '' : `/${data.locale}`;
   window.__lmIndex = data.index;
 
   function renderCard(e: Entry): string {

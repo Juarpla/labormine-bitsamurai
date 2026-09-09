@@ -27,13 +27,15 @@ jobs:
         env:
           ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
           ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+          ORCAROUTER_API_KEY: ${{ secrets.ORCAROUTER_API_KEY }}
 
       - name: Commit refreshed feed (if changed)
         run: |
           git config user.name "labormine-bot"
           git config user.email "bot@labormine.com"
-          if [[ -n "$(git status --porcelain src/data/jobs.json)" ]]; then
-            git add src/data/jobs.json
+          if [[ -n "$(git status --porcelain src/data/jobs.json src/data/translation-cache.json)" ]]; then
+            git add src/data/jobs.json src/data/translation-cache.json
             git commit -m "chore(data): refresh jobs feed"
             git push
           else

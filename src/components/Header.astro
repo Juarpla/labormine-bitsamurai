@@ -1,12 +1,12 @@
 ---
-import { localePath, useTranslations, languages, type Locale } from '../lib/i18n';
+import { localePath, useTranslations, languages, defaultLocale, type Locale } from '../lib/i18n';
 
 interface Props {
   locale?: Locale;
   path?: string;
 }
 
-const { locale = 'en', path = '/' } = Astro.props;
+const { locale = 'es', path = '/' } = Astro.props;
 const t = useTranslations(locale);
 
 const links = [
@@ -48,7 +48,7 @@ const links = [
       <div class="absolute right-0 z-50 mt-2 w-40 overflow-hidden rounded-xl border border-graphite-700 bg-graphite-900 shadow-xl">
         {
           Object.entries(languages).map(([code, label]) => {
-            const target = code === 'en' ? path : `/${code}${path}`;
+            const target = localePath(code as Locale, path);
             return (
               <a
                 href={target}

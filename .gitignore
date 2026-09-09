@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # Cloudflare adapter artifacts
 .wrangler/
+
+# visual walkthrough captures
+screenshots/

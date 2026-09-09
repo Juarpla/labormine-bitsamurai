@@ -3,9 +3,10 @@ import Layout from '../layouts/Layout.astro';
 import PathwaysView from '../components/pages/PathwaysView.astro';
 import { useTranslations } from '../lib/i18n';
 
-const t = useTranslations('en');
+const locale = 'es' as const;
+const t = useTranslations(locale);
 ---
 
-<Layout title={`${t('pathways.title')} — Labormine`} description={t('pathways.lead')} locale="en" path="/visa-pathways">
-  <PathwaysView locale="en" />
+<Layout title={`${t('pathways.title')} — Labormine`} description={t('pathways.lead')} locale={locale} path="/visa-pathways">
+  <PathwaysView locale={locale} />
 </Layout>

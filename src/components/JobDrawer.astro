@@ -27,14 +27,16 @@ const t = useTranslations(locale);
   </div>
 </dialog>
 
-<script define:vars={{ drawerT: { full: t('drawer.full'), apply: t('drawer.apply'), visaNote: t('drawer.visaNote') }, locale }}>
+<script define:vars={{ drawerT: { full: t('drawer.full'), apply: t('drawer.apply'), visaNote: t('drawer.visaNote'), auto: t('job.autoTranslated') }, locale }}>
   const dialog = document.getElementById('lm-drawer');
   const body = document.getElementById('lm-drawer-body');
 
   function openDrawer(job) {
-    const prefix = locale === 'en' ? '' : `/${locale}`;
+    const prefix = locale === 'es' ? '' : `/${locale}`;
+    const shown = (job.translations && job.translations[locale]) || job.title;
+    const auto = shown !== job.title;
     body.innerHTML = `
-      <h3 class="font-display text-xl font-semibold leading-snug">${job.title}</h3>
+      <h3 class="font-display text-xl font-semibold leading-snug">${shown}${auto ? ` <span class="align-middle text-[10px] font-medium uppercase tracking-wide text-graphite-500">✦ ${drawerT.auto}</span>` : ''}</h3>
       <p class="mt-2 text-sm text-graphite-200">${job.company} · ${job.city ?? ''} ${job.salaryText ? ' · ' + job.salaryText : ''}</p>
       ${job.excerpt ? `<p class="mt-4 text-sm leading-relaxed text-graphite-400">${job.excerpt}</p>` : ''}
       <p class="mt-4 rounded-xl border border-graphite-700 bg-graphite-850 p-3 text-xs text-graphite-400">${drawerT.visaNote}</p>

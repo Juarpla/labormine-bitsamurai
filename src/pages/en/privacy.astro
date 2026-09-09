@@ -2,16 +2,15 @@
 import Layout from '../../layouts/Layout.astro';
 import { useTranslations } from '../../lib/i18n';
 
-const locale = 'es' as const;
-const t = useTranslations(locale);
+const t = useTranslations('en');
 ---
 
-<Layout title={`${t('privacy.title')} — Labormine`} description={t('privacy.body').slice(0, 150)} locale={locale} path="/privacy">
+<Layout title={`${t('privacy.title')} — Labormine`} description={t('privacy.body').slice(0, 150)} locale="en" path="/privacy">
   <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
     <h1 class="font-display text-4xl font-semibold text-graphite-100">{t('privacy.title')}</h1>
     <p class="mt-6 leading-relaxed text-graphite-200">{t('privacy.body')}</p>
     <p class="mt-4 text-sm text-graphite-400">
-      <a class="text-brand-400 hover:underline" href="/es/contact">{t('nav.contact')}</a>
+      Questions about this policy? Visit the <a class="text-brand-400 hover:underline" href="/contact">contact page</a>.
     </p>
   </article>
 </Layout>

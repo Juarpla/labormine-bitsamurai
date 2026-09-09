@@ -2,10 +2,10 @@
 import Layout from '../layouts/Layout.astro';
 import { useTranslations } from '../lib/i18n';
 
-const t = useTranslations('en');
+const t = useTranslations('es');
 ---
 
-<Layout title={`${t('notfound.title')} — Labormine`} description={t('notfound.body')} locale="en" path="/404">
+<Layout title={`${t('notfound.title')} — Labormine`} description={t('notfound.body')} locale="es" path="/404">
   <section class="mx-auto flex max-w-3xl flex-col items-center px-4 py-32 text-center sm:px-6">
     <h1 class="font-display text-6xl font-semibold text-brand-500">{t('notfound.title')}</h1>
     <p class="mt-4 text-graphite-400">{t('notfound.body')}</p>

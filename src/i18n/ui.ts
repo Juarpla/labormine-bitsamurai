@@ -5,8 +5,8 @@ export const languages = {
 } as const;
 
 export type Locale = keyof typeof languages;
-export const defaultLocale: Locale = 'en';
-export const locales: Locale[] = ['en', 'es', 'pt'];
+export const defaultLocale: Locale = 'es'; // español es el idioma principal: vive en la raíz
+export const locales: Locale[] = ['es', 'en', 'pt'];
 
 const en = {
   'nav.home': 'Home',
@@ -46,6 +46,7 @@ const en = {
   'chapter.cta.button': 'Browse all jobs',
 
   'card.visa': 'Visa support reported',
+  'job.autoTranslated': 'Auto-translated title',
   'card.remote': 'Remote',
   'card.details': 'Details',
   'card.posted': 'Posted',
@@ -166,6 +167,7 @@ const es: Dictionary = {
   'chapter.cta.button': 'Ver todos los empleos',
 
   'card.visa': 'Apoyo de visa reportado',
+  'job.autoTranslated': 'Título auto-traducido',
   'card.remote': 'Remoto',
   'card.details': 'Detalles',
   'card.posted': 'Publicado',
@@ -284,6 +286,7 @@ const pt: Dictionary = {
   'chapter.cta.button': 'Ver todas as vagas',
 
   'card.visa': 'Apoio de visto informado',
+  'job.autoTranslated': 'Título traduzido automaticamente',
   'card.remote': 'Remoto',
   'card.details': 'Detalhes',
   'card.posted': 'Publicado',

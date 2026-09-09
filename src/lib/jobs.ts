@@ -18,7 +18,19 @@ export type JobIndexEntry = {
   postedAt: string;
   salaryText: string | null;
   excerpt: string;
+  translations?: { es?: string; en?: string; pt?: string };
 };
+
+/** Translated title for the UI locale (descriptions are never translated). */
+export function titleFor(job: Pick<Job, 'title' | 'translations'>, locale: Locale): string {
+  return job.translations?.[locale as 'es' | 'en' | 'pt'] || job.title;
+}
+
+/** True when the title shown for `locale` is an auto-translation (badge). */
+export function isAutoTranslated(job: Pick<Job, 'title' | 'translations'>, locale: Locale): boolean {
+  const t = job.translations?.[locale as 'es' | 'en' | 'pt'];
+  return Boolean(t && t !== job.title);
+}
 
 /** Lightweight index embedded into pages for client-side hydration */
 export function jobIndex(): JobIndexEntry[] {
@@ -35,6 +47,7 @@ export function jobIndex(): JobIndexEntry[] {
     postedAt: j.postedAt,
     salaryText: formatSalary(j),
     excerpt: j.excerpt,
+    translations: j.translations,
   }));
 }
 

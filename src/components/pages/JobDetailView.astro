@@ -3,16 +3,16 @@ import type { Job } from '../../schemas';
 import AdSlot from '../AdSlot.astro';
 import JobCard from '../JobCard.astro';
 import { useTranslations, countryName, type Locale } from '../../lib/i18n';
-import { formatSalary, formatDate, relatedJobs } from '../../lib/jobs';
+import { formatSalary, formatDate, relatedJobs, titleFor, isAutoTranslated } from '../../lib/jobs';
 
 interface Props {
   job: Job;
   locale?: Locale;
 }
-const { job, locale = 'en' } = Astro.props;
+const { job, locale = 'es' } = Astro.props;
 const t = useTranslations(locale);
 const related = relatedJobs(job, 3);
-const backHref = locale === 'en' ? '/jobs' : `/${locale}/jobs`;
+const backHref = locale === 'es' ? '/jobs' : `/${locale}/jobs`;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -57,8 +57,16 @@ const jsonLd = {
       <time datetime={job.postedAt}>{t('card.posted')} {formatDate(job.postedAt, locale)}</time>
     </div>
     <h1 class="mt-4 font-display text-3xl font-semibold leading-tight text-graphite-100 sm:text-4xl">
-      {job.title}
+      {titleFor(job, locale)}
     </h1>
+    {isAutoTranslated(job, locale) && (
+      <p class="mt-2 text-sm text-graphite-400">
+        <span class="mr-2 inline-block rounded-full border border-graphite-700 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-graphite-500">
+          ✦ {t('job.autoTranslated')}
+        </span>
+        <span class="italic">“{job.title}”</span>
+      </p>
+    )}
     <p class="mt-3 text-lg text-graphite-200">
       <span class="font-medium">{job.company}</span>
       <span class="text-graphite-400"> · {job.city ?? t('card.global')} · {countryName(job.country)}</span>
