@@ -112,15 +112,19 @@ const ogImage = new URL('/favicon.svg', site).toString();
         try {
           const res = await fetch('/api/geo');
           const data = await res.json();
-          localStorage.setItem('lm-country', data.country ?? 'GLOBAL');
-          window.Labormine = {
-            country: data.country ?? 'GLOBAL',
-            nationality: stored.nationality,
-            locale: current,
+          // Re-read preferences: the user may have picked a country/nationality
+          // while the request was in flight — never clobber a newer choice.
+          const fresh = {
+            country: localStorage.getItem('lm-country'),
+            nationality: localStorage.getItem('lm-nationality'),
+            locale: localStorage.getItem('lm-locale'),
           };
+          const country = fresh.country ?? data.country ?? 'GLOBAL';
+          if (!fresh.country) localStorage.setItem('lm-country', country);
+          window.Labormine = { country, nationality: fresh.nationality, locale: current };
           document.dispatchEvent(new CustomEvent('lm:geo'));
           // Suggest locale once, only when different from current (es lives at the root)
-          if (!stored.locale && data.suggestedLocale && data.suggestedLocale !== current) {
+          if (!fresh.locale && data.suggestedLocale && data.suggestedLocale !== current) {
             const here = new URL(location.href);
             const rest = here.pathname.replace(/^\/(en|es|pt)/, '');
             const target =
@@ -129,7 +133,11 @@ const ogImage = new URL('/favicon.svg', site).toString();
             document.dispatchEvent(new CustomEvent('lm:locale', { detail: data.suggestedLocale }));
           }
         } catch {
-          window.Labormine = { country: 'GLOBAL', nationality: stored.nationality, locale: current };
+          window.Labormine = {
+            country: localStorage.getItem('lm-country') ?? 'GLOBAL',
+            nationality: localStorage.getItem('lm-nationality'),
+            locale: current,
+          };
           document.dispatchEvent(new CustomEvent('lm:geo'));
         }
       }

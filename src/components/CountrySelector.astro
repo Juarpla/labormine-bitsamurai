@@ -50,13 +50,32 @@ const isCountry = mode === 'country';
 </div>
 
 <script>
+  // Restore the saved value into the select (localStorage survives reloads/navigation)
+  function restore(select: HTMLSelectElement | null, key: string) {
+    if (!select) return;
+    const saved = localStorage.getItem(key);
+    if (saved && [...select.options].some((o) => o.value === saved)) select.value = saved;
+  }
+
   function bind(select: HTMLSelectElement | null, key: string) {
     select?.addEventListener('change', () => {
       if (select.value) localStorage.setItem(key, select.value);
       else localStorage.removeItem(key);
-      location.reload();
+      // Re-hydrate geo-dependent chapters in place — no reload needed
+      window.Labormine = {
+        country: localStorage.getItem('lm-country'),
+        nationality: localStorage.getItem('lm-nationality'),
+        locale: document.documentElement.lang || 'es',
+      };
+      document.dispatchEvent(new CustomEvent('lm:geo'));
+      document.getElementById('chapter-country-section')?.scrollIntoView({ behavior: 'smooth' });
     });
   }
-  bind(document.querySelector('[data-lm-country]'), 'lm-country');
-  bind(document.querySelector('[data-lm-nationality]'), 'lm-nationality');
+
+  const countrySel = document.querySelector('[data-lm-country]') as HTMLSelectElement | null;
+  const nationalitySel = document.querySelector('[data-lm-nationality]') as HTMLSelectElement | null;
+  restore(countrySel, 'lm-country');
+  restore(nationalitySel, 'lm-nationality');
+  bind(countrySel, 'lm-country');
+  bind(nationalitySel, 'lm-nationality');
 </script>

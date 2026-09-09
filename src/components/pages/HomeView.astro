@@ -222,27 +222,50 @@ const payload = JSON.stringify({
     const passportEl = document.getElementById('chapter-passport');
     if (!countryEl || !passportEl) return;
 
-    // Chapter 1 — jobs in your country (+ pathway eligibility badges)
-    const mine = geo.country
-      ? data.index.filter((e: Entry) => e.country === geo.country)
+    const dest = geo.country && geo.country !== 'GLOBAL' ? geo.country : null;
+    const nat = geo.nationality || null;
+    const forYou = nat
+      ? data.pathways.filter(
+          (p: Pathway) => p.eligibleNationalities === null || p.eligibleNationalities.includes(nat)
+        )
       : [];
-    const countryPathways = geo.country
-      ? data.pathways.filter((p: Pathway) => p.country === geo.country)
-      : [];
+
+    // Chapter 1 — jobs matched to the destination country, or (with destination on
+    // Global) to your passport: home country first, then countries with an eligible
+    // visa pathway, then remote roles.
+    let mine: Entry[] = [];
+    let note = '';
+    if (dest) {
+      mine = data.index.filter((e: Entry) => e.country === dest);
+      const countryPathways = data.pathways.filter((p: Pathway) => p.country === dest);
+      if (countryPathways.length)
+        note = `<p class="text-xs text-brand-400 sm:col-span-2">✦ ${countryPathways
+          .map((p: Pathway) => p.name)
+          .join(' · ')}</p>`;
+    } else if (nat) {
+      const visaCountries = new Set(forYou.map((p: Pathway) => p.country));
+      const home: Entry[] = [];
+      const abroad: Entry[] = [];
+      const remote: Entry[] = [];
+      for (const e of data.index as Entry[]) {
+        if (e.country === nat) home.push(e);
+        else if (visaCountries.has(e.country)) abroad.push(e);
+        else if (e.remote) remote.push(e);
+      }
+      mine = [...home, ...abroad, ...remote].slice(0, 6);
+      if (forYou.length)
+        note = `<p class="text-xs text-brand-400 sm:col-span-2">✦ ${forYou
+          .slice(0, 3)
+          .map((p: Pathway) => p.name)
+          .join(' · ')}</p>`;
+    }
     countryEl.innerHTML =
       (mine.length
-        ? mine.slice(0, 4).map((e: Entry) => renderCard(e)).join('')
-        : `<p class="text-sm text-graphite-400 sm:col-span-2">${M.selectPrompt}</p>`) +
-      (countryPathways.length
-        ? `<p class="text-xs text-brand-400 sm:col-span-2">✦ ${countryPathways.map((p: Pathway) => p.name).join(' · ')}</p>`
-        : '');
+        ? mine.map((e: Entry) => renderCard(e)).join('')
+        : `<p class="text-sm text-graphite-400 sm:col-span-2">${M.selectPrompt}</p>`) + note;
 
     // Chapter 2 — pathways for your nationality
-    if (geo.nationality) {
-      const forYou = data.pathways.filter(
-        (p: Pathway) =>
-          p.eligibleNationalities === null || p.eligibleNationalities.includes(geo.nationality)
-      );
+    if (nat) {
       passportEl.innerHTML =
         forYou.slice(0, 4).map((p: Pathway) => renderPathway(p)).join('') ||
         `<p class="text-sm text-graphite-400 sm:col-span-2">${M.pathwaysNone}</p>`;

@@ -18,6 +18,7 @@ export type JobIndexEntry = {
   postedAt: string;
   salaryText: string | null;
   excerpt: string;
+  url: string;
   translations?: { es?: string; en?: string; pt?: string };
 };
 
@@ -47,6 +48,7 @@ export function jobIndex(): JobIndexEntry[] {
     postedAt: j.postedAt,
     salaryText: formatSalary(j),
     excerpt: j.excerpt,
+    url: j.url,
     translations: j.translations,
   }));
 }
