@@ -9,6 +9,9 @@ export default defineConfig({
   site: 'https://labormine.com',
   output: 'static',
   adapter: cloudflare({ platformProxy: { enabled: true } }),
+  // No route uses Astro.session; disabling avoids requiring a SESSION KV
+  // namespace binding in the deployed Worker.
+  session: false,
   integrations: [sitemap()],
   i18n: {
     defaultLocale: 'es',
