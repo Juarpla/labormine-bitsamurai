@@ -15,7 +15,7 @@ interface Props {
 
 const { title, description, locale = 'es', path = '/' } = Astro.props;
 const t = useTranslations(locale);
-const site = Astro.site ?? new URL('https://labormine.com');
+const site = Astro.site ?? new URL('https://labormin.com');
 const canonical = new URL(localePath(locale, path), site);
 const adsClient = import.meta.env.PUBLIC_ADSENSE_CLIENT as string | undefined;
 
@@ -30,12 +30,9 @@ const ogImage = new URL('/favicon.svg', site).toString();
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="en" href={new URL(localePath('en', path), site)} />
-    <link rel="alternate" hreflang="es" href={new URL(localePath('es', path), site)} />
-    <link rel="alternate" hreflang="pt" href={new URL(localePath('pt', path), site)} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <meta property="og:site_name" content="Labormine" />
+    <meta property="og:site_name" content="Labormin" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
@@ -68,6 +65,10 @@ const ogImage = new URL('/favicon.svg', site).toString();
 
     <script>
       // --- Reveal on scroll (IntersectionObserver) ---
+      // Usuario fijo: Perú (es-only, sin detección por IP ni selector de país).
+      // window.Labormin queda definido estáticamente para cualquier script legacy.
+      window.Labormin = { country: 'PE', nationality: 'PE', locale: 'es' };
+
       const els = document.querySelectorAll('.reveal');
       if ('IntersectionObserver' in window) {
         const io = new IntersectionObserver(
@@ -85,62 +86,6 @@ const ogImage = new URL('/favicon.svg', site).toString();
       } else {
         els.forEach((el) => el.classList.add('is-visible'));
       }
-
-      // --- Geo bootstrap: detect country, suggest locale ---
-      type Labormine = {
-        country: string | null;
-        nationality: string | null;
-        locale: string;
-      };
-      const stored = {
-        country: localStorage.getItem('lm-country'),
-        nationality: localStorage.getItem('lm-nationality'),
-      };
-      const current = document.documentElement.lang || 'es';
-
-      async function bootstrap() {
-        if (stored.country) {
-          window.Labormine = {
-            country: stored.country,
-            nationality: stored.nationality,
-            locale: current,
-          };
-          document.dispatchEvent(new CustomEvent('lm:geo'));
-          return;
-        }
-        try {
-          const res = await fetch('/api/geo');
-          const data = await res.json();
-          // Re-read preferences: the user may have picked a country/nationality
-          // while the request was in flight — never clobber a newer choice.
-          const fresh = {
-            country: localStorage.getItem('lm-country'),
-            nationality: localStorage.getItem('lm-nationality'),
-            locale: localStorage.getItem('lm-locale'),
-          };
-          const country = fresh.country ?? data.country ?? 'GLOBAL';
-          if (!fresh.country) localStorage.setItem('lm-country', country);
-          window.Labormine = { country, nationality: fresh.nationality, locale: current };
-          document.dispatchEvent(new CustomEvent('lm:geo'));
-          // Suggest locale once, only when different from current (es lives at the root)
-          if (!fresh.locale && data.suggestedLocale && data.suggestedLocale !== current) {
-            const here = new URL(location.href);
-            const rest = here.pathname.replace(/^\/(en|es|pt)/, '');
-            const target =
-              data.suggestedLocale === 'es' ? rest : `/${data.suggestedLocale}${rest}`;
-            history.replaceState(null, '', target);
-            document.dispatchEvent(new CustomEvent('lm:locale', { detail: data.suggestedLocale }));
-          }
-        } catch {
-          window.Labormine = {
-            country: localStorage.getItem('lm-country') ?? 'GLOBAL',
-            nationality: localStorage.getItem('lm-nationality'),
-            locale: current,
-          };
-          document.dispatchEvent(new CustomEvent('lm:geo'));
-        }
-      }
-      bootstrap();
     </script>
   </body>
 </html>

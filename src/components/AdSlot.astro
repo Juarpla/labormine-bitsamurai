@@ -10,7 +10,7 @@ interface Props {
   class?: string;
 }
 
-const { locale = 'en', slotId, format = 'auto', layoutKey, class: className = '' } = Astro.props;
+const { locale = 'es', slotId, format = 'auto', layoutKey, class: className = '' } = Astro.props;
 const t = useTranslations(locale);
 const client = import.meta.env.PUBLIC_ADSENSE_CLIENT as string | undefined;
 const live = Boolean(client && import.meta.env.PROD && slotId);

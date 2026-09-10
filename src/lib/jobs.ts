@@ -1,9 +1,35 @@
 import raw from '../data/jobs.json';
 import { JobFileSchema, type Job } from '../schemas';
-import { GLOBAL, type Locale } from './i18n';
+import { GLOBAL, countryName, useTranslations, type Locale } from './i18n';
 
-export const jobs: Job[] = JobFileSchema.parse(raw).jobs;
-export const generatedAt: string = JobFileSchema.parse(raw).generatedAt;
+/** Nicho de destinos extranjeros (después de Perú) */
+export const ABROAD_COUNTRIES = ['CL', 'CA', 'US', 'AU'] as const;
+
+export type Tier = 1 | 2 | 3;
+
+/** Jerarquía de nicho: 1 = Perú, 2 = remoto desde Perú (potencias/global),
+ *  3 = extranjero con visa reportada o abierto a internacionales. */
+export function tierOf(job: Pick<Job, 'country' | 'remote' | 'visaReported' | 'openToInternational'>): Tier {
+  if (job.country === 'PE') return 1;
+  if (job.remote) return 2;
+  if (
+    (ABROAD_COUNTRIES as readonly string[]).includes(job.country) &&
+    (job.visaReported || job.openToInternational === true)
+  ) {
+    return 3;
+  }
+  return 3; // defensivo: el ingest ya descarta lo demás
+}
+
+function tierSorted(list: Job[]): Job[] {
+  return [...list].sort(
+    (a, b) => tierOf(a) - tierOf(b) || b.postedAt.localeCompare(a.postedAt)
+  );
+}
+
+const parsed = JobFileSchema.parse(raw);
+export const jobs: Job[] = tierSorted(parsed.jobs);
+export const generatedAt: string = parsed.generatedAt;
 
 export type JobIndexEntry = {
   id: string;
@@ -12,8 +38,10 @@ export type JobIndexEntry = {
   company: string;
   country: string;
   city: string | null;
+  location: string;
   remote: boolean;
   visaReported: boolean;
+  openToInternational?: boolean;
   category: string;
   postedAt: string;
   salaryText: string | null;
@@ -22,7 +50,31 @@ export type JobIndexEntry = {
   translations?: { es?: string; en?: string; pt?: string };
 };
 
-/** Translated title for the UI locale (descriptions are never translated). */
+const normalizeText = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/** Single location line for a job: the verbatim source location when it carries
+ *  the place (e.g. "Cotui, Sanchez Ramirez, Dominican Republic"), otherwise the
+ *  country, or "Global". The country name is only appended when the location
+ *  string does not already name it — never shows contradictory pairs. */
+export function locationLine(
+  job: Pick<Job, 'locationRaw' | 'country'>,
+  t: (key: string) => string,
+): string {
+  const raw = (job.locationRaw || '').trim();
+  if (!raw || /^remote$/i.test(raw)) {
+    if (job.country === GLOBAL) return raw || t('card.global');
+    // "Remote" keeps the source wording; the country adds hire scope ("Remote · Peru").
+    return raw ? `${raw} · ${countryName(job.country)}` : countryName(job.country);
+  }
+  if (job.country === GLOBAL) return raw;
+  const n = normalizeText(raw);
+  const named =
+    n.includes(normalizeText(countryName(job.country))) ||
+    new RegExp(`\\b${job.country}\\b`, 'i').test(n);
+  return named ? raw : `${raw} · ${countryName(job.country)}`;
+}
+
+/** Translated title for the UI locale (descriptions are AI-translated only on demand). */
 export function titleFor(job: Pick<Job, 'title' | 'translations'>, locale: Locale): string {
   return job.translations?.[locale as 'es' | 'en' | 'pt'] || job.title;
 }
@@ -33,8 +85,17 @@ export function isAutoTranslated(job: Pick<Job, 'title' | 'translations'>, local
   return Boolean(t && t !== job.title);
 }
 
+/** Heuristic source-language detection (same rules as scripts/ingest.mjs). */
+export function detectLang(s: string): 'es' | 'en' | 'pt' {
+  if (/[ãõç]|ção|não\b/i.test(s)) return 'pt';
+  if (/[ñ¿¡]/i.test(s)) return 'es';
+  if (/[áéíóúü]/i.test(s)) return 'es';
+  return 'en';
+}
+
 /** Lightweight index embedded into pages for client-side hydration */
-export function jobIndex(): JobIndexEntry[] {
+export function jobIndex(locale: Locale = 'es'): JobIndexEntry[] {
+  const t = useTranslations(locale);
   return jobs.map((j) => ({
     id: j.id,
     slug: j.slug,
@@ -42,8 +103,10 @@ export function jobIndex(): JobIndexEntry[] {
     company: j.company,
     country: j.country,
     city: j.city,
+    location: locationLine(j, t),
     remote: j.remote,
     visaReported: j.visaReported,
+    openToInternational: j.openToInternational,
     category: j.category,
     postedAt: j.postedAt,
     salaryText: formatSalary(j),
@@ -63,19 +126,6 @@ export function byCountry(code: string): Job[] {
 
 export function remoteJobs(): Job[] {
   return jobs.filter((j) => j.remote);
-}
-
-/** Top N countries by job count (excluding Global) for spotlight chapters */
-export function spotlightCountries(n = 3): { code: string; count: number }[] {
-  const counts = new Map<string, number>();
-  for (const j of jobs) {
-    if (j.country === GLOBAL) continue;
-    counts.set(j.country, (counts.get(j.country) || 0) + 1);
-  }
-  return [...counts.entries()]
-    .map(([code, count]) => ({ code, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, n);
 }
 
 export function relatedJobs(job: Job, n = 4): Job[] {

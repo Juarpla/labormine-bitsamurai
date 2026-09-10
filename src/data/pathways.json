@@ -115,6 +115,19 @@
       "workRights": "Up to 48 hours per fortnight during study; unlimited during scheduled breaks",
       "officialUrl": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/student-500",
       "lastVerifiedAt": "2026-09-08"
+    },
+    {
+      "id": "cl-pacwh",
+      "name": "Chile — Vacaciones y Trabajo, Alianza del Pacífico",
+      "type": "working-holiday",
+      "country": "CL",
+      "eligibleNationalities": ["PE"],
+      "ageRange": "18–30 años",
+      "duration": "Hasta 12 meses en Chile",
+      "workRights": "Visa de residente temporario con permiso para trabajar durante la estadía",
+      "officialUrl": "https://www.consulado.gob.cl/working-holiday/alianza-del-pacifico",
+      "notes": "Anexo técnico Chile del acuerdo Chile–Perú–México. Requiere título de enseñanza superior (o estar aceptado en 3er año universitario), seguro médico con cobertura en Chile, no viajar con dependientes y no tener antecedentes penales. Trámite por el Servicio Nacional de Migraciones. Verifica los requisitos vigentes en la fuente oficial.",
+      "lastVerifiedAt": "2026-09-10"
     }
   ]
 }

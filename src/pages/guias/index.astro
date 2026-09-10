@@ -1,0 +1,50 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations } from '../../lib/i18n';
+
+const locale = 'es' as const;
+const t = useTranslations(locale);
+
+const guias = [
+  {
+    href: '/guias/trabajar-en-mina-sin-experiencia',
+    title: 'Cómo conseguir tu primer trabajo en mina sin experiencia',
+    desc: 'Qué puestos de entrada existen, dónde buscan gente nueva y cómo prepararte para postular de verdad.',
+    kicker: 'Primer empleo',
+  },
+  {
+    href: '/guias/requisitos-medicos-seguridad-ssoma',
+    title: 'Requisitos médicos y de seguridad (SSOMA) para trabajar en mina',
+    desc: 'Examen médico ocupacional, certificados de seguridad y documentos que piden las empresas antes de contratar.',
+    kicker: 'Requisitos',
+  },
+  {
+    href: '/visa-pathways',
+    title: 'Rutas de visa para trabajar en el extranjero',
+    desc: 'Fuentes oficiales para que peruanos trabajen legalmente en Chile, Canadá, EE. UU. y Australia.',
+    kicker: 'Extranjero',
+  },
+];
+---
+
+<Layout title={`${t('nav.guias')} — Labormin`} description="Guías prácticas para postular a empleos mineros en Perú y el extranjero." locale={locale} path="/guias">
+  <article class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+    <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('nav.guias')}</h1>
+    <p class="mt-4 max-w-2xl text-graphite-400">
+      {t('chapter.guides.lead')} Escritas por el equipo de Labormin, sin promesas de ingresos y con la fuente oficial siempre a la vista.
+    </p>
+
+    <div class="mt-10 grid gap-4 sm:grid-cols-2">
+      {guias.map((g) => (
+        <a
+          href={g.href}
+          class="group flex flex-col gap-3 rounded-2xl border border-graphite-800 bg-graphite-900 p-6 transition-colors hover:border-brand-500"
+        >
+          <p class="text-xs font-semibold uppercase tracking-widest text-brand-500">{g.kicker}</p>
+          <h2 class="font-display text-xl font-semibold leading-snug text-graphite-100 group-hover:text-brand-400">{g.title}</h2>
+          <p class="text-sm leading-relaxed text-graphite-400">{g.desc}</p>
+        </a>
+      ))}
+    </div>
+  </article>
+</Layout>

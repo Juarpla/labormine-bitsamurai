@@ -9,7 +9,7 @@
  *
  * Reuses a running dev server when found on localhost:4321-4326 (a port
  * counts as "ours" only if the homepage returns 200 and mentions
- * "Labormine"); otherwise spawns one on the first free port and kills it
+ * "Labormin"); otherwise spawns one on the first free port and kills it
  * when done. Screenshots overwrite screenshots/<browser>-<w>x<h>.png.
  */
 import { spawn } from 'node:child_process';
@@ -24,7 +24,7 @@ const VIEWPORTS = [
   { width: 768, height: 1024 }, // tablet
   { width: 1280, height: 800 }, // desktop
 ];
-const SITE_MARKER = 'Labormine';
+const SITE_MARKER = 'Labormin';
 const SPAWN_TIMEOUT_MS = 30_000;
 const STABILIZE_MS = 1_000;
 const PROBE_TIMEOUT_MS = 500;
@@ -159,7 +159,7 @@ async function main() {
   } else {
     throw new Error(
       `Ports ${PORT_RANGE[0]}-${PORT_RANGE.at(-1)} are busy with other processes and ` +
-        `no Labormine dev server was found among them. Free a port or stop the other processes.`,
+        `no Labormin dev server was found among them. Free a port or stop the other processes.`,
     );
   }
 

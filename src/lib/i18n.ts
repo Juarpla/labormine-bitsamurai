@@ -8,7 +8,7 @@ export function getLangFromUrl(url: URL): Locale {
   return defaultLocale;
 }
 
-/** Prefix a path with the locale unless it's the default (en). */
+/** Prefix a path with the locale unless it's the default (es). */
 export function localePath(locale: Locale, path: string): string {
   const clean = path.startsWith('/') ? path : `/${path}`;
   return locale === defaultLocale ? clean : `/${locale}${clean}`;
@@ -27,40 +27,25 @@ export function useTranslations(locale: Locale) {
   };
 }
 
-/** Map of ISO-3166 alpha-2 → locale suggestion, used by /api/geo */
-export const countryToLocale: Record<string, Locale> = {
-  // Spanish-speaking
-  AR: 'es', BO: 'es', CL: 'es', CO: 'es', CR: 'es', CU: 'es', DO: 'es', EC: 'es',
-  SV: 'es', GQ: 'es', GT: 'es', HN: 'es', MX: 'es', NI: 'es', PA: 'es', PY: 'es',
-  PE: 'es', PR: 'es', ES: 'es', UY: 'es', VE: 'es',
-  // Portuguese-speaking
-  BR: 'pt', PT: 'pt', AO: 'pt', MZ: 'pt', CV: 'pt', GW: 'pt', ST: 'pt', TL: 'pt',
-};
-
-/** The 14 mining countries + Global, in UI order */
+/** The niche mining countries, in UI priority order (Peru first) + Global */
 export const miningCountries = [
-  { code: 'AU', name: 'Australia' },
-  { code: 'CA', name: 'Canada' },
+  { code: 'PE', name: 'Perú' },
   { code: 'CL', name: 'Chile' },
-  { code: 'PE', name: 'Peru' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'US', name: 'United States' },
-  { code: 'ID', name: 'Indonesia' },
-  { code: 'GH', name: 'Ghana' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'ZM', name: 'Zambia' },
-  { code: 'CD', name: 'DR Congo' },
-  { code: 'MN', name: 'Mongolia' },
-  { code: 'KZ', name: 'Kazakhstan' },
+  { code: 'CA', name: 'Canadá' },
+  { code: 'US', name: 'Estados Unidos' },
+  { code: 'AU', name: 'Australia' },
 ] as const;
+
+/** Fixed user context: the niche launches Peru-first (peruano = país y nacionalidad). */
+export const DEFAULT_COUNTRY = 'PE';
+export const DEFAULT_NATIONALITY = 'PE';
 
 export const GLOBAL = 'GLOBAL';
 
 export function countryName(code: string): string {
-  if (code === GLOBAL) return 'Global / Remote';
+  if (code === GLOBAL) return 'Global / Remoto';
   return miningCountries.find((c) => c.code === code)?.name ?? code;
 }
 
-export { getDictionary };
+export { getDictionary, defaultLocale };
 export type { Locale, Dictionary };

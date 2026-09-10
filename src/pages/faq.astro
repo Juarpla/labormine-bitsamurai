@@ -1,0 +1,73 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { useTranslations } from '../lib/i18n';
+
+const locale = 'es' as const;
+const t = useTranslations(locale);
+
+const faqs = [
+  {
+    q: '¿Necesito experiencia para conseguir trabajo en mina?',
+    body: 'No siempre. Hay puestos de entrada que las empresas y contratistas abren a gente sin experiencia previa en el sector —por ejemplo auxiliares de planta, personal de campamento (hotelería, cocina, logística) y operadores en formación— y hay ferias de empleo minero donde las empresas reclutan en el momento. Lo que casi siempre sí piden son los certificados de seguridad y el examen médico ocupacional; en la guía de requisitos te contamos qué son y por dónde empezar.',
+    link: { href: '/guias', label: 'Ver las guías' },
+  },
+  {
+    q: '¿Cuánto se gana en la minería peruana?',
+    body: 'Depende del rol, la empresa y si es planta, proyecto o campamento. No publicamos cifras inventadas: cuando el propio empleador declara un rango de sueldo en la oferta, lo mostramos tal cual en la tarjeta del empleo. Filtra por ofertas con salario visible y compáralas tú mismo.',
+    link: { href: '/jobs', label: 'Ver ofertas con salario' },
+  },
+  {
+    q: '¿Puedo trabajar en el extranjero sin visa de trabajo?',
+    body: 'No. Para trabajar legalmente en Chile, Canadá, EE. UU. o Australia necesitas una visa o permiso de trabajo. Lo que hacemos es mostrarte las rutas oficiales (por ejemplo la Working Holiday Alianza del Pacífico para ir de Perú a Chile entre los 18 y 30 años) y las ofertas del extranjero que mencionan apoyo de visa o que su gobierno declara abiertas a candidatos internacionales.',
+    link: { href: '/visa-pathways', label: 'Ver rutas de visa' },
+  },
+  {
+    q: '¿Qué significa “apoyo de visa reportado”?',
+    body: 'Es una señal heurística que sacamos del texto de la oferta (palabras como “sponsorship” o “patrocinio de visa”). No es una promesa: un aviso puede dejar de patrocinar o el proceso puede fallar. Verifica siempre con el empleador antes de tomar decisiones.',
+    link: { href: '/jobs', label: 'Ver ofertas con apoyo de visa' },
+  },
+  {
+    q: '¿Las ofertas de Labormin son reales?',
+    body: 'Sí. Agregamos ofertas publicadas en bolsas de trabajo públicas de empleadores mineros —en Perú y en las potencias mineras— y cada una enlaza a la publicación original. Nunca generamos ni editamos anuncios de empleo; si una fuente no entrega nada, no inventamos nada.',
+    link: { href: '/about', label: 'Cómo funciona Labormin' },
+  },
+  {
+    q: '¿Puedo trabajar en mina desde mi casa?',
+    body: 'Algunos roles corporativos y técnicos (geología de datos, ingeniería, compras, TI) son remotos y los puedes ejercer desde Perú. Están agrupados después de las ofertas peruanas, porque la minería es un sector mayormente presencial y el remoto es la excepción.',
+    link: { href: '/jobs', label: 'Ver empleos remotos' },
+  },
+  {
+    q: '¿Cómo postulo a una oferta?',
+    body: 'Cada tarjeta tiene un botón “Postular en la fuente” que te lleva a la publicación original del empleador o de la bolsa donde fue publicada. Labormin no intermedia ni guarda tu CV: postulas directo en la fuente.',
+    link: { href: '/jobs', label: 'Explorar empleos' },
+  },
+];
+---
+
+<Layout title={`Preguntas frecuentes — Labormin`} description="Respuestas directas para postulantes mineros: experiencia, salarios, requisitos y visa." locale={locale} path="/faq">
+  <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">Preguntas frecuentes</h1>
+    <p class="mt-4 text-graphite-400">
+      Respuestas directas para quien busca su primera oportunidad en minería. Nada aquí reemplaza lo que diga el empleador o el sitio oficial de cada gobierno.
+    </p>
+
+    <div class="mt-10 space-y-3">
+      {faqs.map((f) => (
+        <details class="group rounded-2xl border border-graphite-800 bg-graphite-900 p-5 [&_summary::-webkit-details-marker]:hidden">
+          <summary class="flex cursor-pointer items-center justify-between gap-4 font-display text-lg font-semibold text-graphite-100">
+            {f.q}
+            <span class="shrink-0 text-brand-400 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+          </summary>
+          <div class="mt-3 space-y-3 text-sm leading-relaxed text-graphite-300">
+            <p>{f.body}</p>
+            <a class="text-brand-400 hover:underline" href={f.link.href}>{f.link.label} →</a>
+          </div>
+        </details>
+      ))}
+    </div>
+
+    <p class="mt-10 text-sm text-graphite-400">
+      ¿No encuentras tu respuesta? <a class="text-brand-400 hover:underline" href="/contact">Escríbenos</a>.
+    </p>
+  </article>
+</Layout>

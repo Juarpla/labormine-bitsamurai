@@ -4,7 +4,7 @@ import { useTranslations, type Locale } from '../lib/i18n';
 interface Props {
   locale?: Locale;
 }
-const { locale = 'en' } = Astro.props;
+const { locale = 'es' } = Astro.props;
 const t = useTranslations(locale);
 ---
 
@@ -37,7 +37,7 @@ const t = useTranslations(locale);
     const auto = shown !== job.title;
     body.innerHTML = `
       <h3 class="font-display text-xl font-semibold leading-snug">${shown}${auto ? ` <span class="align-middle text-[10px] font-medium uppercase tracking-wide text-graphite-500">✦ ${drawerT.auto}</span>` : ''}</h3>
-      <p class="mt-2 text-sm text-graphite-200">${job.company} · ${job.city ?? ''} ${job.salaryText ? ' · ' + job.salaryText : ''}</p>
+      <p class="mt-2 text-sm text-graphite-200">${job.company}${job.location ? ' · ' + job.location : ''} ${job.salaryText ? ' · ' + job.salaryText : ''}</p>
       ${job.excerpt ? `<p class="mt-4 text-sm leading-relaxed text-graphite-400">${job.excerpt}</p>` : ''}
       <p class="mt-4 rounded-xl border border-graphite-700 bg-graphite-850 p-3 text-xs text-graphite-400">${drawerT.visaNote}</p>
       <div class="mt-5 flex flex-wrap gap-3">

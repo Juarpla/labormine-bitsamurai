@@ -1,158 +1,83 @@
 ---
-import pathways from '../../data/pathways.json';
-import { useTranslations, type Locale } from '../../lib/i18n';
+import pathwaysRaw from '../../data/pathways.json';
+import AdSlot from '../AdSlot.astro';
+import { useTranslations, countryName, defaultLocale, type Locale } from '../../lib/i18n';
+import { DEFAULT_NATIONALITY } from '../../lib/i18n';
 
 interface Props {
   locale?: Locale;
 }
-const { locale = 'en' } = Astro.props;
+const { locale = defaultLocale } = Astro.props;
 const t = useTranslations(locale);
 
-const nationalityOptions = [...new Set(pathways.pathways.flatMap((p) => p.eligibleNationalities ?? []))]
-  .sort()
-  .map((code) => {
-    try {
-      return { code, name: new Intl.DisplayNames([locale], { type: 'region' }).of(code) ?? code };
-    } catch {
-      return { code, name: code };
-    }
-  });
+const typeLabel: Record<string, string> = {
+  'working-holiday': t('pathway.working-holiday'),
+  temporary: t('pathway.temporary'),
+  student: t('pathway.student'),
+  sponsorship: t('pathway.sponsorship'),
+  skilled: t('pathway.skilled'),
+};
 
-const payload = JSON.stringify({
-  pathways: pathways.pathways,
-  options: nationalityOptions,
-  locale,
-  msgs: {
-    choose: t('pathways.choose'),
-    age: t('pathways.age'),
-    duration: t('pathways.duration'),
-    rights: t('pathways.rights'),
-    notes: t('pathways.notes'),
-    official: t('pathways.official'),
-    verified: t('pathways.verified'),
-    any: t('pathways.any'),
-    none: t('pathways.none'),
-    forYou: t('pathways.forYou'),
-    workingHoliday: t('pathway.working-holiday'),
-    temporary: t('pathway.temporary'),
-    student: t('pathway.student'),
-    sponsorship: t('pathway.sponsorship'),
-    skilled: t('pathway.skilled'),
-  },
-});
+// Nicho: solo rutas abiertas a peruanos (eligibleNationalities null = todas).
+const pathways = pathwaysRaw.pathways.filter(
+  (p) => !p.eligibleNationalities || p.eligibleNationalities.includes(DEFAULT_NATIONALITY)
+);
 ---
 
 <section class="mx-auto max-w-5xl px-4 py-16 sm:px-6">
   <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('pathways.title')}</h1>
   <p class="mt-4 max-w-2xl text-graphite-400">{t('pathways.lead')}</p>
 
-  <div class="mt-10 max-w-md">
-    <label for="pw-nationality" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">
-      {t('pathways.select')}
-    </label>
-    <select
-      id="pw-nationality"
-      class="mt-2 w-full rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2.5 text-sm outline-none focus:border-brand-500"
-    >
-      <option value="">{t('pathways.choose')}</option>
-      {nationalityOptions.map((o) => <option value={o.code}>{o.name}</option>)}
-    </select>
-  </div>
-
-  <h2 id="pw-heading" class="mt-12 hidden font-display text-2xl font-semibold text-graphite-100"></h2>
-  <div id="pw-grid" class="mt-6 grid gap-4 sm:grid-cols-2">
-    <div class="skeleton h-44"></div>
-    <div class="skeleton h-44"></div>
-  </div>
-</section>
-
-<script type="application/json" id="pw-data" set:html={payload} />
-
-<script>
-  type Pathway = {
-    id: string; name: string; type: string; country: string;
-    eligibleNationalities: string[] | null; ageRange: string | null;
-    duration: string; workRights: string; officialUrl: string;
-    notes?: string; lastVerifiedAt: string;
-  };
-  const data = JSON.parse(document.getElementById('pw-data')!.textContent!);
-  const M = data.msgs;
-  const typeLabel: Record<string, string> = {
-    'working-holiday': M.workingHoliday,
-    temporary: M.temporary,
-    student: M.student,
-    sponsorship: M.sponsorship,
-    skilled: M.skilled,
-  };
-  const regionNames = new Intl.DisplayNames([data.locale], { type: 'region' });
-  const sel = document.getElementById('pw-nationality') as HTMLSelectElement;
-  const grid = document.getElementById('pw-grid')!;
-  const heading = document.getElementById('pw-heading')!;
-
-  function render(p: Pathway): string {
-    const country = regionNames.of(p.country) ?? p.country;
-    const nat = p.eligibleNationalities
-      ? p.eligibleNationalities
-          .map((c) => regionNames.of(c) ?? c)
-          .slice(0, 6)
-          .join(', ') + (p.eligibleNationalities.length > 6 ? '…' : '')
-      : M.any;
-    return `
-      <article class="flex flex-col gap-3 rounded-2xl border border-graphite-800 bg-graphite-900 p-5">
-        <div class="flex items-start justify-between gap-3">
-          <h3 class="font-display text-lg font-semibold leading-snug">${p.name}</h3>
-          <span class="shrink-0 rounded-full bg-graphite-800 px-2.5 py-1 text-[11px] text-graphite-300">${typeLabel[p.type] ?? p.type}</span>
-        </div>
-        <p class="text-sm text-graphite-300">🌍 ${country}</p>
-        <dl class="space-y-1.5 text-xs text-graphite-400">
-          ${p.ageRange ? `<div><dt class="inline text-graphite-500">${M.age}: </dt><dd class="inline">${p.ageRange}</dd></div>` : ''}
-          <div><dt class="inline text-graphite-500">${M.duration}: </dt><dd class="inline">${p.duration}</dd></div>
-          <div><dt class="inline text-graphite-500">${M.rights}: </dt><dd class="inline">${p.workRights}</dd></div>
-          <div><dt class="inline text-graphite-500">${M.any}: </dt><dd class="inline">${nat}</dd></div>
-        </dl>
-        ${p.notes ? `<p class="rounded-xl border border-graphite-700 bg-graphite-850 p-3 text-xs text-graphite-400">${M.notes}: ${p.notes}</p>` : ''}
-        <div class="mt-auto flex items-center justify-between gap-3 pt-2">
-          <a href="${p.officialUrl}" target="_blank" rel="noopener nofollow"
-             class="rounded-full bg-brand-500 px-4 py-2 text-xs font-semibold text-graphite-950 hover:bg-brand-400">
-            ${M.official} ↗
-          </a>
-          <span class="text-[11px] text-graphite-500">${M.verified.replace('{date}', p.lastVerifiedAt)}</span>
-        </div>
-      </article>`;
-  }
-
-  function update() {
-    const nat = sel.value || localStorage.getItem('lm-nationality') || '';
-    if (sel.value) localStorage.setItem('lm-nationality', sel.value);
-    const list = data.pathways as Pathway[];
-    const eligible = nat
-      ? list.filter((p) => p.eligibleNationalities === null || p.eligibleNationalities.includes(nat))
-      : list.filter((p) => p.eligibleNationalities === null);
-
-    if (nat) {
-      heading.textContent = M.forYou.replace('{nationality}', regionNames.of(nat) ?? nat);
-      heading.classList.remove('hidden');
-      if (eligible.filter((p) => p.eligibleNationalities !== null).length === 0 && eligible.length > 0) {
-        // only sponsorship/student routes — show the notice
-        heading.insertAdjacentHTML('afterend', `<p class="mt-4 text-sm text-graphite-400">${M.none}</p>`);
-      }
-    } else {
-      heading.classList.add('hidden');
+  <h2 class="mt-12 font-display text-2xl font-semibold text-graphite-100">
+    {t('pathways.forYou', { nationality: countryName(DEFAULT_NATIONALITY) })}
+  </h2>
+  <div class="mt-6 grid gap-4 sm:grid-cols-2">
+    {
+      pathways.map((p) => (
+        <article class="flex flex-col gap-3 rounded-2xl border border-graphite-800 bg-graphite-900 p-5">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="font-display text-lg font-semibold leading-snug text-graphite-100">{p.name}</h3>
+            <span class="shrink-0 rounded-full bg-graphite-800 px-2.5 py-1 text-[11px] text-graphite-300">
+              {typeLabel[p.type] ?? p.type}
+            </span>
+          </div>
+          <p class="text-sm text-graphite-300">🌍 {countryName(p.country)}</p>
+          <dl class="space-y-1.5 text-xs text-graphite-400">
+            {p.ageRange && (
+              <div><dt class="inline text-graphite-500">{t('pathways.age')}: </dt><dd class="inline">{p.ageRange}</dd></div>
+            )}
+            <div><dt class="inline text-graphite-500">{t('pathways.duration')}: </dt><dd class="inline">{p.duration}</dd></div>
+            <div><dt class="inline text-graphite-500">{t('pathways.rights')}: </dt><dd class="inline">{p.workRights}</dd></div>
+            <div><dt class="inline text-graphite-500">{t('pathways.any')}: </dt><dd class="inline">
+              {p.eligibleNationalities === null
+                ? t('pathways.any')
+                : p.eligibleNationalities.length === 1
+                  ? countryName(p.eligibleNationalities[0])
+                  : `${p.eligibleNationalities.length} nacionalidades`}
+            </dd></div>
+          </dl>
+          {p.notes && (
+            <p class="rounded-xl border border-graphite-700 bg-graphite-850 p-3 text-xs leading-relaxed text-graphite-400">
+              {t('pathways.notes')}: {p.notes}
+            </p>
+          )}
+          <div class="mt-auto flex items-center justify-between gap-3 pt-2">
+            <a
+              href={p.officialUrl}
+              target="_blank"
+              rel="noopener nofollow"
+              class="rounded-full bg-brand-500 px-4 py-2 text-xs font-semibold text-graphite-950 hover:bg-brand-400"
+            >
+              {t('pathways.official')} ↗
+            </a>
+            <span class="text-[11px] text-graphite-500">
+              {t('pathways.verified', { date: p.lastVerifiedAt })}
+            </span>
+          </div>
+        </article>
+      ))
     }
-    grid.innerHTML = eligible.map(render).join('') || `<p class="text-sm text-graphite-400 sm:col-span-2">${M.none}</p>`;
-  }
+  </div>
 
-  // Clean any previous notice
-  function clearNotice() {
-    heading.nextElementSibling?.tagName === 'P' && heading.nextElementSibling.remove();
-  }
-  sel.addEventListener('change', () => {
-    clearNotice();
-    update();
-  });
-  document.addEventListener('lm:geo', () => {
-    sel.value = localStorage.getItem('lm-nationality') ?? '';
-    update();
-  });
-  update();
-</script>
+  <AdSlot slotId="pathways-1" format="auto" locale={locale} />
+</section>

@@ -1,0 +1,6 @@
+{
+  "_comment": "Adjudicaciones manuales desde el panel ops (/ops/flags), guardadas vía GitHub API. scripts/ingest.mjs las aplica en cada run: corrections re-fija el país (gana sobre todo), exclude saca el empleo del feed para siempre, dismissed oculta el flag sin cambiar datos.",
+  "corrections": {},
+  "exclude": {},
+  "dismissed": {}
+}

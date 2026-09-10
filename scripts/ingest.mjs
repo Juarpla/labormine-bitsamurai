@@ -1,17 +1,22 @@
 #!/usr/bin/env node
 /**
- * Labormine job ingestion.
+ * Labormin job ingestion.
  *
  * Fetches REAL job listings from public, keyless employer boards and APIs,
  * normalizes them, and writes src/data/jobs.json (the static feed the site
  * is built from). Never fabricates listings — every job links to its source.
  *
- * Usage: node scripts/ingest.mjs
+ * Usage: node scripts/ingest.mjs [--repair] [--prune]
+ *        --repair re-derives country/salary of stored jobs offline (no fetch).
+ *        --prune re-filters the stored feed with the niche rules + TTL offline.
  * Optional env: ADZUNA_APP_ID, ADZUNA_APP_KEY (free tier, enables Adzuna)
+ *               APIFY_TOKEN (enables apify-linkedin/indeed/seek/glassdoor)
+ *               LM_SOURCES (comma list; CI schedules Apify sources by weekday)
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { callProvider, extractJson, resolveChain, withFailover } from '../src/lib/llm.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'src', 'data', 'jobs.json');
@@ -27,8 +32,16 @@ try {
 
 const TTL_DAYS = 30;
 let MAX_PER_SOURCE = 1500; // overridden by companies.json `maxPerSource`
-const UA = { 'User-Agent': 'LabormineBot/1.0 (+https://labormine.com/about)' };
+const UA = { 'User-Agent': 'LaborminBot/1.0 (+https://labormin.com/about)' };
 const DESC_MAX = 6000;
+
+/** CI day-scheduling: refresh-jobs.yml derives LM_SOURCES from the weekday and
+ *  only those Apify sources run. Empty/unset = run all sources (local dev). */
+const LM_SOURCES = (process.env.LM_SOURCES || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+const lmActive = (name) => !LM_SOURCES.length || LM_SOURCES.includes(name);
 
 /* ------------------------------ tiny helpers ------------------------------ */
 
@@ -291,8 +304,12 @@ const effectiveCap = (src, maxPerSource) => {
   return Number.isFinite(fast) ? Math.min(fast, base) : base;
 };
 
-/** Normalized job factory for all direct/custom sources. */
-function mkJob({ source, id, company, title, country, city = null, locationRaw = '', remote = false, description = '', postedAt, url, salary = null }) {
+/** Normalized job factory for all direct/custom sources. `trustedCountry` marks
+ *  rows whose country comes from deliberate config (market/board `country`
+ *  attribute) rather than text detection — the location policy still
+ *  auto-corrects/excludes them, but does not queue them for review. It is a
+ *  runtime-only marker: applyLocationPolicy strips it before the feed write. */
+function mkJob({ source, id, company, title, country, city = null, locationRaw = '', remote = false, description = '', postedAt, url, salary = null, trustedCountry = false }) {
   const text = stripTags(decodeEntities(description || ''));
   const iso = isoDate(postedAt);
   return {
@@ -303,6 +320,7 @@ function mkJob({ source, id, company, title, country, city = null, locationRaw =
     companySlug: slugify(company || ''),
     source,
     country,
+    countryTrusted: trustedCountry,
     city,
     locationRaw,
     remote,
@@ -321,22 +339,56 @@ function mkJob({ source, id, company, title, country, city = null, locationRaw =
 const COUNTRY_HINTS = {
   AU: ['australia', 'perth', 'kalgoorlie', 'brisbane', 'mount isa', 'newman', 'port hedland', 'adelaide', 'melbourne', 'sydney', 'western australia', 'queensland', 'pilbara', 'new south wales', 'roxby downs', 'olympic dam', 'karratha', 'boddington', 'telfer', 'south australia', 'tasmania', 'rosebery'],
   CA: ['canada', 'vancouver', 'toronto', 'sudbury', "val-d'or", 'elkford', 'sparwood', 'yellowknife', 'timmins', 'rouyn-noranda', 'british columbia', 'quebec', 'ontario', 'labrador', 'nunavut', 'elk valley', 'detour lake', 'malartic', 'baker lake', 'hope bay', 'calgary', 'edmonton', 'saskatchewan', 'manitoba', 'snow lake', 'flin flon'],
-  CL: ['chile', 'santiago', 'antofagasta', 'atacama', 'calama', 'copiapo', 'iquique', 'maria elena', 'pica', 'huasco', 'vallenar', 'mejillones', 'sierra gorda', 'los andes', 'el teniente', 'rancagua', 'machali', 'coquimbo', 'la serena', 'radomiro tomic', 'collahuasi', 'tierra amarilla'],
-  PE: ['peru', 'lima', 'arequipa', 'cajamarca', 'cusco', 'piura', 'tacna', 'moquegua', 'ilo', 'toquepala', 'cuajone', 'morococha', 'yauli', 'apurimac', 'cotabambas', 'espinar', 'marcona', 'cerro de pasco', 'pasco', 'las bambas', 'san miguel de pallaques', 'hualgayoc', 'chala', 'anasayaco', 'nazca', 'ica', 'junin', 'jauja', 'la oroya', 'morococha district'],
+  CL: ['chile', 'santiago', 'antofagasta', 'atacama', 'calama', 'copiapo', 'iquique', 'maria elena', 'pica', 'huasco', 'vallenar', 'mejillones', 'sierra gorda', 'los andes', 'el teniente', 'rancagua', 'machali', 'coquimbo', 'la serena', 'radomiro tomic', 'collahuasi', 'tierra amarilla', 'andacollo'],
+  PE: ['peru', 'lima', 'arequipa', 'cajamarca', 'cusco', 'piura', 'tacna', 'moquegua', 'ilo', 'toquepala', 'cuajone', 'morococha', 'yauli', 'apurimac', 'cotabambas', 'espinar', 'marcona', 'cerro de pasco', 'pasco', 'las bambas', 'san miguel de pallaques', 'hualgayoc', 'chala', 'anasayaco', 'nazca', 'ica', 'junin', 'jauja', 'la oroya', 'morococha district', 'huancavelica'],
   ZA: ['south africa', 'johannesburg', 'pretoria', 'rustenburg', 'kathu', 'mpumalanga', 'limpopo', 'kuruman', 'welkom', 'north west province', 'gamsberg', 'aggeneys', 'hotazel', 'klerksdorp', 'carletonville', 'gauteng', 'burgersfort', 'postmasburg', 'mokopane', 'steelpoort', 'free state', 'ekurhuleni', 'secunda', 'middelburg'],
-  US: ['united states', 'usa', 'nevada', 'reno', 'elko', 'winnemucca', 'phoenix', 'tucson', 'denver', 'salt lake city', 'utah', 'alaska', 'arizona', 'morenci', 'sierrita', 'bagdad', 'safford', 'casa grande', 'rosemont', 'silver city', 'tyrone', 'henderson', 'cortez', 'carlin', 'twin creeks', 'turquoise ridge', 'south jordan', 'new mexico', 'missouri', 'kansas'],
-  ID: ['indonesia', 'jakarta', 'sorowako', 'sumbawa', 'morowali', 'timika', 'grasberg', 'halmahera', 'kalimantan', 'maluku', 'batu hijau', 'martabe', 'dairi', 'wetar', 'tujuh bukit', 'papua', 'nusa tenggara'],
+  US: ['united states', 'usa', 'nevada', 'reno', 'elko', 'winnemucca', 'phoenix', 'tucson', 'denver', 'salt lake city', 'utah', 'alaska', 'arizona', 'morenci', 'sierrita', 'bagdad', 'safford', 'casa grande', 'rosemont', 'silver city', 'tyrone', 'henderson', 'cortez', 'carlin', 'twin creeks', 'turquoise ridge', 'south jordan', 'new mexico', 'missouri', 'kansas', 'san francisco', 'bay area', 'california', 'new orleans',
+    // Comma-anchored state codes: match "Climax, CO" but never bare words ("co").
+    ', az', ', co', ', nm', ', tx', ', nv', ', ut', ', ak'],
+  ID: ['indonesia', 'jakarta', 'sorowako', 'sumbawa', 'morowali', 'timika', 'grasberg', 'halmahera', 'kalimantan', 'maluku', 'batu hijau', 'martabe', 'dairi', 'wetar', 'tujuh bukit', 'nusa tenggara'],
   GH: ['ghana', 'accra', 'tarkwa', 'obuasi', 'ahafo', 'kumasi', 'damang', 'akyem'],
-  BR: ['brazil', 'belo horizonte', 'parauapebas', 'carajas', 'brumadinho', 'minas gerais', 'sao paulo', 'rio de janeiro', 'onca puma', 'canaa dos carajas', 'mariana', 'ouro preto', 'paracatu', 'goias', 'mato grosso', 'salobo'],
+  BR: ['brazil', 'brasil', 'belo horizonte', 'parauapebas', 'carajas', 'brumadinho', 'minas gerais', 'sao paulo', 'rio de janeiro', 'onca puma', 'canaa dos carajas', 'mariana', 'ouro preto', 'paracatu', 'goias', 'mato grosso', 'salobo'],
   MX: ['mexico', 'hermosillo', 'sonora', 'zacatecas', 'chihuahua', 'durango', 'guanajuato', 'cananea', 'sinaloa', 'la caridad', 'nacozari', 'fresnillo', 'sombrerete', 'taxco', 'morelos', 'coahuila', 'san luis potosi'],
-  ZM: ['zambia', 'kitwe', 'ndola', 'lusaka', 'chingola', 'solwezi', 'copperbelt', 'kalulushi', 'chambishi', 'kansanshi', 'sentinel', 'lumwana', 'mufulira', 'kafue'],
+  ZM: ['zambia', 'kitwe', 'ndola', 'lusaka', 'chingola', 'solwezi', 'copperbelt', 'kalulushi', 'kalumbila', 'chambishi', 'kansanshi', 'sentinel', 'lumwana', 'mufulira', 'kafue'],
   CD: ['dr congo', 'democratic republic', 'congo (', 'congo,', 'drc', 'lubumbashi', 'kolwezi', 'kinshasa', 'manono', 'fungurume', 'lualaba', 'katanga', 'kamoa', 'kakula', 'kinsevere', 'mutanda', 'kipushi', 'kisanfu', 'kakanda'],
   MN: ['mongolia', 'ulaanbaatar', 'omnogovi', 'khanbogd', 'south gobi', 'erdenet', 'tsagaan suvarga'],
   KZ: ['kazakhstan', 'almaty', 'astana', 'karaganda', 'zhezkazgan', 'aktobe', 'balkhash', 'bozshakol', 'aktogay', 'satpayev', 'satbayev'],
+  MR: ['mauritania', 'tasiast', 'nouakchott', 'nouadhibou'],
 };
 
+// Pre-compiled hint regexes: require non-letter boundaries so short hints like
+// "ica" (Peru) don't match "Africa"/"America", "usa" doesn't match "Lusaka", etc.
+// Hints that already begin with a non-letter (", co") carry their own left anchor.
+const HINT_RES = new Map(
+  Object.entries(COUNTRY_HINTS).map(([code, hints]) => [
+    code,
+    hints.map((h) => {
+      const body = h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return /^[^a-z]/.test(h)
+        ? new RegExp(`${body}([^a-z]|$)`)
+        : new RegExp(`(^|[^a-z])${body}([^a-z]|$)`);
+    }),
+  ])
+);
+
+/** Strip diacritics so Spanish/Portuguese location strings ("México", "Nuevo
+ *  León", "Perú", "Brasil") match the ASCII hint lists. Applied to the TEXT
+ *  side only; hints are ASCII. City/display strings keep their accents. */
+const deaccent = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
 function detectCountry(text) {
-  const t = (text || '').toLowerCase();
+  const t = deaccent(text).toLowerCase().replace(/\u00a0/g, ' '); // normalize NBSP from web sources
+  for (const [code, res] of HINT_RES) {
+    if (res.some((re) => re.test(t))) return code;
+  }
+  return 'GLOBAL';
+}
+
+/** Legacy includes()-based matching (pre-boundary regexes) — kept only so the
+ *  repair can detect stored countries that are substring artifacts
+ *  ("ica" ⊂ "Dominican", "usa" ⊂ "Lusaka", "lima" ⊂ "Colima"). */
+function detectCountryLegacy(text) {
+  const t = (text || '').toLowerCase().replace(/\u00a0/g, ' ');
   for (const [code, hints] of Object.entries(COUNTRY_HINTS)) {
     if (hints.some((h) => t.includes(h))) return code;
   }
@@ -353,6 +405,200 @@ function detectCountryFrom(explicit, text) {
 function splitLocation(raw) {
   const [city, ...rest] = (raw || '').split(',').map((s) => s.trim());
   return { city: city || null, rest: rest.join(', ') };
+}
+
+/* ----------------------- location-truth policy (owner) --------------------- */
+
+/** Country names OUTSIDE the supported mining-country set. Only the
+ *  location-truth policy uses this: when a listing's location string names one
+ *  of these countries, the stored/source country contradicts the truth and the
+ *  job is excluded from the feed — a listing is never shown with a country its
+ *  own location disproves. Grow the map from ingest-flags.json review; never
+ *  add a bare region token that collides with a real place in a supported
+ *  country ("Papua" alone is an Indonesian province — only the full
+ *  "papua new guinea" maps to PG; "London, ON" means Ontario, not the UK). */
+const OTHER_COUNTRY_NAMES = {
+  AR: ['argentina'],
+  BO: ['bolivia'],
+  CN: ['china', 'shanghai'],
+  GA: ['gabon', 'libreville', 'liverville'],
+  GB: ['united kingdom', 'reino unido', 'england', 'inglaterra'],
+  MA: ['morocco', 'marruecos', 'casablanca'],
+  NC: ['new caledonia', 'noumea', 'nouméa'],
+  NO: ['norway', 'noruega', 'hammerfest'],
+  PG: ['papua new guinea', 'papúa nueva guinea'],
+  PH: ['philippines', 'filipinas'],
+  SE: ['sweden', 'suecia'],
+  TZ: ['tanzania'],
+};
+
+const OTHER_RES = new Map(
+  Object.entries(OTHER_COUNTRY_NAMES).map(([code, names]) => [
+    code,
+    // deaccent the names too so both sides are ASCII ('papúa nueva guinea').
+    names.map((h) => new RegExp(`(^|[^a-z])${deaccent(h).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z]|$)`)),
+  ])
+);
+
+/** Same normalization as detectCountry(); returns a non-supported country code
+ *  when `text` names one, else null. */
+function detectOtherCountry(text) {
+  const t = deaccent(text).toLowerCase().replace(/\u00a0/g, ' ');
+  for (const [code, res] of OTHER_RES) {
+    if (res.some((re) => re.test(t))) return code;
+  }
+  return null;
+}
+
+const FLAGS_FILE = path.join(ROOT, 'src', 'data', 'ingest-flags.json');
+const OVERRIDES_FILE = path.join(ROOT, 'src', 'data', 'overrides.json');
+
+async function readJsonSafe(file, fallback) {
+  try {
+    return JSON.parse(await readFile(file, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+/** Location-truth policy — owner decisions (2026-09-09):
+ *  1. The location string names a supported country → that code wins (warn on change).
+ *  2. The location string names a NON-supported country → the job is excluded
+ *     from the feed entirely (country-bound remotes included: "Remote, United
+ *     Kingdom" is not global). Only the source location is trusted to say where
+ *     a job is; a contradicting structured country field loses.
+ *  3. The location string names nothing → trust the source country, but when
+ *     that country is uncorroborated by the location, flag the job for manual
+ *     review in ingest-flags.json. Two corroborations quiet the flag: (a) the
+ *     country was deliberately configured (market/board attribute —
+ *     `countryTrusted`), and (b) the location ends with a bare uppercase ISO-2
+ *     code from a collision-safe set (no US-state clashes like CA/ID/GA/NC/MA)
+ *     that MATCHES the stored country — it never contradicts or re-corrects.
+ *  src/data/overrides.json (ops panel) wins over everything: corrections re-set
+ *  the country and un-drop, excluded ids never enter the feed, dismissed flags
+ *  stay hidden. Slugs are never regenerated (URLs stay valid). */
+const SAFE_ISO2_WHOLE = /^(US|PE|MX|BR|AU|ZA|CL|GH|CD|ZM|SE|GB|NO)$/;
+const SAFE_ISO2_TAIL = /,\s*(US|PE|MX|BR|AU|ZA|CL|GH|CD|ZM|SE|GB|NO)$/;
+
+async function applyLocationPolicy(candidates) {
+  const today = new Date().toISOString().slice(0, 10);
+  const prev = await readJsonSafe(FLAGS_FILE, { flags: [], excluded: [] });
+  const overrides = await readJsonSafe(OVERRIDES_FILE, {});
+  const corrections = overrides.corrections || {};
+  const excludeManual = overrides.exclude || {};
+  const dismissed = overrides.dismissed || {};
+  const prevFlagById = new Map((prev.flags || []).map((f) => [f.id, f]));
+  const prevExclById = new Map((prev.excluded || []).map((f) => [f.id, f]));
+
+  const kept = [];
+  const flags = [];
+  const excluded = [];
+  let autoFixed = 0;
+  for (const j of candidates) {
+    const loc = (j.locationRaw || '').trim();
+    let named = 'GLOBAL';
+    if (loc) {
+      // City (first comma segment) first — it is the unambiguous part; extra
+      // segments can mislead ("Lima, Santiago De Surco" is Peru, not Chile).
+      named = detectCountry(splitLocation(loc).city || '');
+      if (named === 'GLOBAL') named = detectCountry(loc);
+    }
+    const other = loc ? detectOtherCountry(loc) : null;
+    // Bare uppercase ISO-2 corroboration (safe set only, match-never-contradict).
+    const whole = loc?.match(SAFE_ISO2_WHOLE);
+    const tail = loc?.match(SAFE_ISO2_TAIL);
+    const iso2 = whole ? whole[0] : tail ? tail[1] : null;
+
+    if (corrections[j.id]?.country) {
+      // Manual correction outranks everything, including the location string.
+      if (j.country !== corrections[j.id].country) {
+        console.log(`⚠ override country ${j.country} → ${corrections[j.id].country}: ${j.company} · ${j.title} (${j.id})`);
+        j.country = corrections[j.id].country;
+      }
+      kept.push(j);
+      continue;
+    }
+    if (named !== 'GLOBAL') {
+      if (named !== j.country) {
+        console.log(`⚠ country ${j.country} → ${named} (location names it): ${j.company} · ${loc} (${j.id})`);
+        j.country = named;
+        autoFixed++;
+      }
+      kept.push(j);
+      continue;
+    }
+    if (other) {
+      console.log(
+        `✗ excluded — location names ${OTHER_COUNTRY_NAMES[other][0]} (unsupported country): ${j.company} · ${j.title} · ${loc} (${j.id})`
+      );
+      excluded.push({
+        id: j.id,
+        slug: j.slug,
+        company: j.company,
+        title: j.title,
+        source: j.source,
+        country: j.country,
+        locationRaw: loc,
+        reason: `unsupported-location:${other}`,
+        firstSeenAt: prevExclById.get(j.id)?.firstSeenAt || today,
+        lastSeenAt: today,
+      });
+      continue;
+    }
+    if (loc && j.country && j.country !== 'GLOBAL' && iso2 !== j.country && !j.countryTrusted) {
+      console.log(`⚠ unverified country ${j.country} (location names nothing): ${j.company} · ${j.title} · ${loc} (${j.id})`);
+      const prevFlag = prevFlagById.get(j.id);
+      flags.push({
+        id: j.id,
+        slug: j.slug,
+        company: j.company,
+        title: j.title,
+        source: j.source,
+        country: j.country,
+        locationRaw: loc,
+        remote: Boolean(j.remote),
+        reason: 'unverified-country',
+        firstSeenAt: prevFlag?.firstSeenAt || today,
+        lastSeenAt: today,
+      });
+      kept.push(j);
+      continue;
+    }
+    kept.push(j); // global, or empty location trusting the board-level country
+  }
+
+  // Manual exclusions always win.
+  const out = kept.filter((j) => {
+    if (!excludeManual[j.id]) return true;
+    console.log(`✗ excluded (manual): ${j.company} · ${j.title} (${j.id})`);
+    return false;
+  });
+
+  // countryTrusted is a runtime-only marker — never leak it into the feed.
+  for (const j of out) delete j.countryTrusted;
+
+  await writeFile(
+    FLAGS_FILE,
+    JSON.stringify({ generatedAt: today, flags, excluded: excluded.slice(0, 300) }, null, 2)
+  );
+  console.log(
+    `✓ location policy: ${autoFixed} auto-corrected · ${excluded.length} excluded (unsupported) · ${flags.length} flagged for review · ${out.length} jobs kept`
+  );
+  return out;
+}
+
+/** SuccessFactors CSB titles embed the posting's location as a trailing
+ *  "(Site, Region, CC)" suffix — employer-provided, so it outranks text hints.
+ *  Requires ≥2 comma parts ending in a known 2-letter country code; plain
+ *  qualifiers ("(FIFO)", "(Contract)", "(London)") are ignored. */
+function parseTitleLocation(title) {
+  const m = (title || '').match(/\(([^()]+)\)\s*$/);
+  if (!m) return null;
+  const parts = m[1].split(',').map((s) => s.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  const code = parts[parts.length - 1].toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code) || !(code in COUNTRY_HINTS)) return null;
+  return { locationRaw: parts.join(', '), city: parts[0], code };
 }
 
 /* ------------------------- classification heuristics ---------------------- */
@@ -380,27 +626,39 @@ function visaHeuristic(...texts) {
 function parseSalary(text, country) {
   if (!text) return null;
   const currencyByCountry = { US: 'USD', CA: 'CAD', AU: 'AUD', ZA: 'ZAR', BR: 'BRL', CL: 'CLP', PE: 'PEN', MX: 'MXN' };
+
+  const amounts = [...text.matchAll(/(?<![\w,.])(\d{1,3}(?:[.,]\d{3}){1,2}(?:\.\d+)?|\d{2,6})(?!\s?[%°])/g)]
+    .map((m) => ({
+      n: parseFloat(m[1].replace(/[.,](?=\d{3}\b)/g, '').replace(/,(?=\d{1,2}\b)/, '.')),
+      // ±24 chars around each amount: currency/period markers must sit next to
+      // the figure — a bare "CAD" elsewhere (e.g. the design software) must not win.
+      ctx: text.slice(Math.max(0, m.index - 24), m.index + m[0].length + 24),
+    }))
+    .filter((m) => m.n >= 10000 && m.n <= 2000000);
+  if (amounts.length === 0) return null;
+  const ctx = amounts.map((m) => m.ctx).join('\n');
+
   let currency = null;
-  if (/\b(usd|us\$)\b|(?<![\w])\$/i.test(text) && !/cad|aud|nz/i.test(text)) currency = 'USD';
-  if (/\bcad\b/i.test(text)) currency = 'CAD';
-  if (/\baud\b/i.test(text)) currency = 'AUD';
-  if (/\bzar\b|\br\s?\d{2,3}[,.]\d{3}\b/i.test(text)) currency = 'ZAR';
-  if (/r\$\s?\d/i.test(text)) currency = 'BRL';
-  if (/€/.test(text)) currency = 'EUR';
-  if (/£/.test(text)) currency = 'GBP';
+  if (/€/.test(ctx)) currency = 'EUR';
+  if (/£/.test(ctx)) currency = 'GBP';
+  if (/r\$|\bbrl\b/i.test(ctx)) currency = 'BRL';
+  if (/\bzar\b|\br\s?\d{2,3}[,.]\d{3}\b/i.test(ctx)) currency = 'ZAR';
+  if (/\baud\b|a\$/.test(ctx)) currency = 'AUD';
+  if (/\bcad\b|c\$/.test(ctx)) currency = 'CAD';
+  if (/\busd\b|us\$/.test(ctx)) currency = 'USD';
+  // Bare "$": not a country signal — Latin American postings write "$776.648"
+  // for pesos, so defer to the posting's country currency (USD as last resort).
+  if (!currency && /(?<![\w$])\$/.test(ctx)) currency = currencyByCountry[country] || 'USD';
   if (!currency) currency = currencyByCountry[country] || null;
   if (!currency) return null;
 
-  const matches = [...text.matchAll(/(?<![\w,.])(\d{1,3}(?:[.,]\d{3}){1,2}(?:\.\d+)?|\d{2,6})(?!\s?[%°])/g)]
-    .map((m) => parseFloat(m[1].replace(/[.,](?=\d{3}\b)/g, '').replace(/,(?=\d{1,2}\b)/, '.')))
-    .filter((n) => n >= 10000 && n <= 2000000);
-  if (matches.length === 0) return null;
-  const min = Math.min(...matches);
-  const max = Math.max(...matches);
+  const nums = amounts.map((m) => m.n);
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
   let period = 'year';
-  if (/\bmonth|mensual|m[eê]s\b/i.test(text)) period = 'month';
-  else if (/\bday|d[ií]a\b/i.test(text)) period = 'day';
-  else if (/\bhour|hora\b/i.test(text)) period = 'hour';
+  if (/\/\s*(hour|hr|hora)|\bper\s+(hour|hr)|\ban\s+hour\b|\bpor\s+hora\b|\bla\s+hora\b/i.test(ctx)) period = 'hour';
+  else if (/\/\s*(day|d[ií]a)|\bper\s+day\b|\ba\s+day\b|\bpor\s+d[ií]a\b|\bal\s+d[ií]a\b/i.test(ctx)) period = 'day';
+  else if (/\/\s*month\b|\bper\s+month\b|\ba\s+month\b|\bmensual\b|\bpor\s+mes\b|\bal\s+mes\b/i.test(ctx)) period = 'month';
   return { min, max: max > min ? max : null, currency, period };
 }
 
@@ -412,7 +670,7 @@ async function fetchGreenhouse({ name, slug }) {
   return rows.map((j) => {
     const text = stripHtml(j.content || '');
     const loc = j.location?.name || '';
-    const country = detectCountry(`${loc} ${text.slice(0, 800)}`);
+    const country = detectCountryFrom(loc, text.slice(0, 800));
     const { city } = splitLocation(loc);
     const remote = /\bremote\b/i.test(loc) || /\bwork remotely|fully remote\b/i.test(text);
     const company = name.replace(/ (DRC|Zambia|Zambian)$/i, '');
@@ -446,7 +704,7 @@ async function fetchLever({ name, slug }) {
       [j.description, ...(j.lists || []).map((l) => l.content)].filter(Boolean).join('\n\n') || ''
     );
     const loc = j.categories?.location || '';
-    const country = detectCountry(`${loc} ${text.slice(0, 800)}`);
+    const country = detectCountryFrom(loc, text.slice(0, 800));
     const { city } = splitLocation(loc);
     const remote = /\bremote\b/i.test(loc) || /\bwork remotely|fully remote\b/i.test(text);
     return {
@@ -485,7 +743,7 @@ async function fetchArbeitnow() {
       const text = stripHtml(j.description_html || '');
       const title = j.title || '';
       if (!MINING_RE.test(title) && !MINING_RE.test(text.slice(0, 500))) continue;
-      const country = detectCountry(`${j.location || ''} ${text.slice(0, 800)}`);
+      const country = detectCountryFrom(j.location || '', text.slice(0, 800));
       const { city } = splitLocation(j.location || '');
       const remote = j.remote || /\bremote\b/i.test(title) || /\bwork remotely|fully remote\b/i.test(text);
       const company = j.company_name || 'Unknown';
@@ -546,6 +804,45 @@ async function fetchRemotive() {
     });
 }
 
+async function fetchRemoteok() {
+  // RemoteOK expone un array JSON (el primer elemento es su aviso legal).
+  const rows = await fetchJson('https://remoteok.com/api');
+  const list = Array.isArray(rows) ? rows.slice(1) : [];
+  return list
+    .filter((r) => r && (r.position || r.title))
+    .filter((r) => {
+      const text = stripHtml(r.description || '');
+      return MINING_RE.test(r.position || r.title || '') || MINING_RE.test(text.slice(0, 500));
+    })
+    .map((r) => {
+      const title = (r.position || r.title || '').trim();
+      const text = stripHtml(r.description || '');
+      const loc = r.location || '';
+      const country = detectCountry(loc) || 'GLOBAL';
+      const company = r.company || 'Unknown';
+      const postedAt = (r.date || new Date().toISOString()).slice(0, 10);
+      return {
+        id: `ro-${r.id ?? slugify(title)}`,
+        slug: slugify(`${company}-${title}-${country}-${r.id ?? postedAt}`),
+        title,
+        company,
+        companySlug: slugify(company),
+        source: 'remoteok',
+        country,
+        city: splitLocation(loc).city,
+        locationRaw: loc,
+        remote: true,
+        visaReported: visaHeuristic(title, text),
+        category: classifyCategory(title),
+        salary: parseSalary(text, country),
+        postedAt,
+        url: r.url,
+        description: htmlify(text.slice(0, DESC_MAX)),
+        excerpt: excerpt(text),
+      };
+    });
+}
+
 async function fetchAdzuna({ code }) {
   const appId = process.env.ADZUNA_APP_ID;
   const appKey = process.env.ADZUNA_APP_KEY;
@@ -570,6 +867,7 @@ async function fetchAdzuna({ code }) {
       companySlug: slugify(company),
       source: 'adzuna',
       country: code,
+      countryTrusted: true,
       city,
       locationRaw: j.location?.display_name || '',
       remote: /\bremote|work from home\b/i.test(text.slice(0, 500)),
@@ -599,6 +897,7 @@ async function fetchSccCapper(src) {
       company: src.company,
       title: String(o.TituloOferta || '').trim(),
       country: src.country || 'PE',
+      trustedCountry: true,
       description: String(o.Resumen || ''),
       postedAt: today,
       url: src.url,
@@ -629,13 +928,15 @@ async function fetchHiringroom(src, prevById) {
     const age = (chunk.match(/vacancy-time[\s\S]{0,600}?(Hace\s+\d+\s+\S+)/) || [])[1] || '';
     const postedAt = hiringroomRelativeDate(age);
     const { city } = splitLocation(locRaw);
-    const country = detectCountry(`${locRaw} ${title}`) || src.country || 'GLOBAL';
+    const det = detectCountryFrom(locRaw, title);
+    const country = det !== 'GLOBAL' ? det : (src.country || 'GLOBAL');
     const job = mkJob({
       source: 'hiringroom',
+      country,
+      trustedCountry: det === 'GLOBAL' && Boolean(src.country),
       id: `hr-${id}`,
       company: src.company,
       title,
-      country,
       city,
       locationRaw: locRaw,
       postedAt,
@@ -691,15 +992,17 @@ async function fetchSapsfCsb(src, prevById) {
       if (!id) continue;
       const title = item.title || id;
       const text = stripTags(decodeEntities(decodeEntities(item.description || '')));
-      const { city } = splitLocation('');
+      const loc = parseTitleLocation(title); // employer-provided "(Site, Region, CC)"
       jobs.push(
         mkJob({
           source: 'sapsf-csb',
           id: `csb-${slugify(src.company).slice(0, 12)}-${id}`,
           company: src.company,
           title,
-          country: src.country || detectCountry(`${title} ${text.slice(0, 800)}`),
-          city: null,
+          country: src.country || loc?.code || detectCountry(`${title} ${text.slice(0, 800)}`),
+          trustedCountry: Boolean(src.country),
+          city: loc?.city ?? null,
+          locationRaw: loc?.locationRaw || '',
           description: text,
           postedAt: isoDate(item.pubDate),
           url: item.link.split('?')[0],
@@ -755,6 +1058,7 @@ async function fetchSapsfCsb(src, prevById) {
       base.city = p.city;
       base.locationRaw = p.raw;
       base.country = src.country || p.country;
+      base.countryTrusted = Boolean(src.country);
       base.salary = parseSalary(`${p.raw} ${p.description.slice(0, 2000)}`, base.country);
       if (p.description) {
         base.description = htmlify(p.description.slice(0, DESC_MAX));
@@ -869,6 +1173,7 @@ async function fetchPageup(src, prevById) {
       company: src.company,
       title,
       country: src.country || detectCountryFrom(locRaw, `${title} ${locRaw}`),
+      trustedCountry: Boolean(src.country) && detectCountryFrom(locRaw, `${title} ${locRaw}`) === 'GLOBAL',
       city: splitLocation(locRaw).city,
       locationRaw: locRaw,
       postedAt: todayISO(),
@@ -1188,8 +1493,9 @@ async function fetchJobbank(src, prevById) {
       source: 'jobbank',
       id: `jb-${c.num}`,
       company: c.business || src.company,
-      title: c.title,
+      title,
       country: src.country || 'CA',
+      trustedCountry: true,
       city: splitLocation(c.locRaw).city,
       locationRaw: c.locRaw,
       salary: parseSalary(c.salaryText, 'CA'),
@@ -1197,6 +1503,9 @@ async function fetchJobbank(src, prevById) {
       url: `https://www.jobbank.gc.ca/jobsearch/jobposting/${c.num}`,
       description: '',
     });
+    // La query usa el filtro oficial de candidatos internacionales (fglo=1):
+    // el propio gobierno canadiense declara que aceptan postulantes de afuera.
+    job.openToInternational = true;
     if (hydrateFromPrev(prevById, job)) {
       out.push(job);
       continue;
@@ -1299,6 +1608,7 @@ async function fetchPnet(src, prevById) {
       company: it.companyName || src.company,
       title: it.title || '',
       country: src.country || 'ZA',
+      trustedCountry: true,
       city: splitLocation(it.location || '').city,
       locationRaw: it.location || '',
       salary: parseSalary(String(it.salary || ''), 'ZA'),
@@ -1354,7 +1664,8 @@ async function fetchComputrabajo(src, prevById) {
         const jp = collectJobPostings(extractJsonLd(dhtml))[0];
         if (!jp) continue;
         const addr = jp.jobLocation?.address || {};
-        const country = src.country || detectCountry(`${addr.addressLocality || ''} ${addr.addressRegion || ''} ${addr.addressCountry || ''}`);
+        const det = detectCountry(`${addr.addressLocality || ''} ${addr.addressRegion || ''} ${addr.addressCountry || ''}`);
+        const country = src.country || det;
         const sal = jp.baseSalary;
         let salary = null;
         if (sal?.value?.value) {
@@ -1370,6 +1681,7 @@ async function fetchComputrabajo(src, prevById) {
           company: (jp.hiringOrganization && jp.hiringOrganization.name) || src.company,
           title: (jp.title || '').trim(),
           country,
+          trustedCountry: Boolean(src.country) && det === 'GLOBAL',
           city: splitLocation(addr.addressLocality || '').city,
           locationRaw: [addr.addressLocality, addr.addressRegion].filter(Boolean).join(', '),
           salary,
@@ -1454,6 +1766,7 @@ async function fetchNavent(src) {
         company: o.empresa || src.company,
         title: o.titulo || '',
         country: src.country || 'GLOBAL',
+        trustedCountry: Boolean(src.country),
         city: splitLocation(o.localizacion || '').city,
         locationRaw: o.localizacion || '',
         postedAt: o.fechaPublicacion,
@@ -1596,6 +1909,7 @@ async function fetchEmpleosmineros(src) {
         company: src.company,
         title: cargo.trim(),
         country: src.country || 'CL',
+        trustedCountry: true,
         city: o.comuna || null,
         locationRaw: [o.comuna, o.region].filter(Boolean).join(', '),
         postedAt: isoDate(o.created_at),
@@ -1698,16 +2012,213 @@ async function fetchApifyLinkedin(cfg, prevById) {
   return out;
 }
 
-/* ------------------------------ translations ------------------------------ */
-/* Titles are auto-translated (es/en/pt) via an OpenAI-compatible gateway.     */
-/* Descriptions are NEVER translated (repo rule). Fail-open: no key or API     */
-/* error → jobs keep their original title. Results are cached and committed.   */
+/* -------------------- apify: indeed / seek / glassdoor -------------------- */
 
-const TRANSLATE_API = 'https://api.orcarouter.ai/v1/chat/completions';
-const TRANSLATE_MODEL = process.env.ORCAROUTER_MODEL || 'orcarouter/free';
-const TRANSLATE_LANGS = ['es', 'en', 'pt'];
+/** Structured salary from actor fields → SalarySchema shape. Periods outside
+ *  the schema enum (weekly etc.) yield null — never invent a conversion. */
+function salaryFromStructured(min, max, currency, period) {
+  const p = { year: 'year', yearly: 'year', annual: 'year', month: 'month', monthly: 'month', day: 'day', daily: 'day', hour: 'hour', hourly: 'hour' }[String(period || '').toLowerCase()];
+  const cur = String(currency || '').toUpperCase();
+  if (!p || !cur) return null;
+  if (!Number.isFinite(min) && !Number.isFinite(max)) return null;
+  const lo = Number.isFinite(min) ? min : max;
+  const hi = Number.isFinite(max) && max > lo ? max : null;
+  return { min: lo, max: hi, currency: cur, period: p };
+}
+
+/** Search-scoped marketplace fetch: one actor run per query, markets in config
+ *  order (priority); `cap` is the TOTAL per-run budget and each query gets the
+ *  remaining budget, so earlier markets fill first. Dedupe by URL inside the run
+ *  (final cross-source dedupe happens in main). Country = search scope. */
+async function fetchApifyIndeed(cfg) {
+  if (!process.env.APIFY_TOKEN) {
+    console.log('ℹ Indeed skipped (set APIFY_TOKEN to enable)');
+    return [];
+  }
+  const cap = effectiveCap({ cap: cfg.cap }, MAX_PER_SOURCE);
+  const out = [];
+  const seen = new Set();
+  let remaining = cap;
+  for (const m of cfg.markets || []) {
+    for (const keyword of m.keywords || []) {
+      if (remaining <= 0) break;
+      let items = [];
+      try {
+        items = await runApifyActor(cfg.actor, {
+          query: keyword,
+          location: m.location || '',
+          country: m.country,
+          radius: m.radius ?? 0,
+          maxItems: remaining,
+          sort: 'date',
+          datePosted: String(cfg.datePosted || 14),
+          scrapeCompany: false,
+        });
+      } catch (err) {
+        console.error(`✗ apify-indeed:${m.country}/${keyword} → ${err.message}`);
+        continue;
+      }
+      remaining -= items.length; // billed per row — the budget counts raw rows
+      let accepted = 0;
+      for (const it of items) {
+        const title = it.title || '';
+        const url = it.url || '';
+        if (!title || !/^https?:\/\//.test(url) || seen.has(url)) continue;
+        seen.add(url);
+        const { city } = splitLocation(it.location || '');
+        out.push(
+          mkJob({
+            source: 'apify-indeed',
+            id: `indeed-${slugify(url).slice(-40)}`,
+            company: it.company || 'Indeed',
+            title,
+            country: m.country,
+            trustedCountry: true,
+            city,
+            locationRaw: it.location || '',
+            remote: it.remote === 'remote' || /\bremote\b/i.test(it.location || ''),
+            postedAt: isoDate(it.datePosted),
+            url,
+            description: typeof it.description === 'string' ? it.description : '',
+            salary: salaryFromStructured(it.salaryMin, it.salaryMax, it.currency, it.salaryPeriod),
+          })
+        );
+        accepted++;
+      }
+      console.log(`✓ apify-indeed:${m.country}/${keyword} → ${accepted} jobs (raw ${items.length}, budget left ${Math.max(remaining, 0)})`);
+    }
+    if (remaining <= 0) break;
+  }
+  return out;
+}
+
+/** Seek (AU national search). The actor returns search-result fields only — no
+ *  full description (teaser + bullet points are the verbatim source data) and
+ *  no URL (built deterministically from the listing's own roleId + id). */
+async function fetchApifySeek(cfg) {
+  if (!process.env.APIFY_TOKEN) {
+    console.log('ℹ Seek skipped (set APIFY_TOKEN to enable)');
+    return [];
+  }
+  const cap = effectiveCap({ cap: cfg.cap }, MAX_PER_SOURCE);
+  let items = [];
+  try {
+    items = await runApifyActor(cfg.actor, {
+      keywords: cfg.keywords || 'mining',
+      where: cfg.where || 'All Australia',
+      pageSize: Math.min(100, cap),
+      maxPages: Math.ceil(cap / 100),
+      daterange: cfg.daterange || 14,
+    });
+    console.log(`✓ apify-seek → ${items.length} raw items`);
+  } catch (err) {
+    console.error(`✗ apify-seek → ${err.message}`);
+    return [];
+  }
+  const out = [];
+  const seen = new Set();
+  for (const it of items) {
+    const title = it.title || '';
+    const url = it.roleId && it.id ? `https://www.seek.com.au/jobs/${it.roleId}/${it.id}` : '';
+    if (!title || !url || seen.has(url)) continue;
+    seen.add(url);
+    const locRaw = Array.isArray(it.locations) ? it.locations.join(', ') : '';
+    const teaser = [it.teaser, ...(it.bulletPoints || [])].filter(Boolean).join('\n');
+    const { city } = splitLocation(locRaw);
+    out.push(
+      mkJob({
+        source: 'apify-seek',
+        id: `seek-${it.id}`,
+        company: it.companyName || it.advertiserName || 'SEEK',
+        title,
+        country: 'AU',
+        trustedCountry: true,
+        city,
+        locationRaw: locRaw,
+        remote: /\bremote\b/i.test(locRaw),
+        postedAt: isoDate(it.listingDate),
+        url,
+        description: teaser,
+        salary: parseSalary(it.salaryLabel || '', 'AU'),
+      })
+    );
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+
+/** Glassdoor markets (country-scoped search; no location = site-wide). Only the
+ *  markets that exist on Glassdoor (21 markets, no South Africa site). */
+async function fetchApifyGlassdoor(cfg) {
+  if (!process.env.APIFY_TOKEN) {
+    console.log('ℹ Glassdoor skipped (set APIFY_TOKEN to enable)');
+    return [];
+  }
+  const cap = effectiveCap({ cap: cfg.cap }, MAX_PER_SOURCE);
+  const out = [];
+  const seen = new Set();
+  let remaining = cap;
+  for (const m of cfg.markets || []) {
+    if (remaining <= 0) break;
+    let items = [];
+    try {
+      items = await runApifyActor(cfg.actor, {
+        query: m.keyword || 'mining',
+        country: m.country,
+        maxResults: remaining,
+        postedDays: cfg.postedDays || 14,
+        includeDetails: true,
+        includeCompanyProfile: false,
+      });
+    } catch (err) {
+      console.error(`✗ apify-glassdoor:${m.country} → ${err.message}`);
+      continue;
+    }
+    remaining -= items.length; // billed per row — the budget counts raw rows
+    let accepted = 0;
+    for (const it of items) {
+      const title = it.title || '';
+      const url = it.canonicalUrl || it.sourceUrl || '';
+      if (!title || !/^https?:\/\//.test(url) || seen.has(url)) continue;
+      seen.add(url);
+      const locRaw = it.locationFormatted || it.location || '';
+      const { city } = splitLocation(locRaw);
+      out.push(
+        mkJob({
+          source: 'apify-glassdoor',
+          id: `glassdoor-${it.jobKey || slugify(url).slice(-40)}`,
+          company: it.company || 'Glassdoor',
+          title,
+          country: m.country,
+          trustedCountry: true,
+          city,
+          locationRaw: locRaw,
+          remote: Boolean(it.isRemote) || /\bremote\b/i.test(locRaw),
+          postedAt: isoDate(it.postedDate),
+          url,
+          description: typeof it.description === 'string' ? it.description : '',
+          salary: salaryFromStructured(it.salaryMin, it.salaryMax, it.salaryCurrency, it.salaryType),
+        })
+      );
+      accepted++;
+    }
+    console.log(`✓ apify-glassdoor:${m.country}/${m.keyword || 'mining'} → ${accepted} jobs (raw ${items.length}, budget left ${Math.max(remaining, 0)})`);
+  }
+  return out;
+}
+
+/* ------------------------------ translations ------------------------------ */
+/* Titles are auto-translated (es/en/pt) via the multi-provider LLM chain in   */
+/* src/lib/llm.js. Descriptions are NEVER translated (repo rule). Fail-open:  */
+/* no credentials or API error → jobs keep their original title. Results are   */
+/* cached and committed.                                                       */
+
+const TRANSLATE_LANGS = ['es']; // solo español: el sitio es de nicho peruano
 const LANG_NAMES = { es: 'Spanish', en: 'English', pt: 'Portuguese' };
 const CACHE_FILE = path.join(ROOT, 'src', 'data', 'translation-cache.json');
+const llmLog = (m) => console.error(m);
+// Built once at startup (after .env loading); iteration order = LLM_PROVIDER_ORDER.
+const llmChain = resolveChain((k) => process.env[k], llmLog);
 
 function detectLang(s) {
   if (/[ãõç]|ção|não\b/i.test(s)) return 'pt';
@@ -1717,38 +2228,33 @@ function detectLang(s) {
 }
 
 async function translateBatch(titles, target) {
-  const res = await fetch(TRANSLATE_API, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.ORCAROUTER_API_KEY}`,
+  return withFailover(
+    llmChain,
+    async (provider) => {
+      const raw = await callProvider(provider, {
+        messages: [
+          {
+            role: 'system',
+            content: `You are a translator for mining job titles. Input: a JSON object {"titles":[...]}. Output: ONLY a JSON object {"translations":[...]} with one translation per input item, in the same order, written in ${LANG_NAMES[target]}. Preserve job-title style (no sentences, no explanations, no quotes around items). If an item is already in ${LANG_NAMES[target]}, return it unchanged.`,
+          },
+          { role: 'user', content: JSON.stringify({ titles }) },
+        ],
+        timeoutMs: 120000,
+      });
+      const parsed = JSON.parse(extractJson(raw));
+      const arr = Array.isArray(parsed) ? parsed : parsed.translations;
+      if (!Array.isArray(arr) || arr.length !== titles.length) throw new Error('translation shape mismatch');
+      return arr.map((s) => String(s || '').trim());
     },
-    body: JSON.stringify({
-      model: TRANSLATE_MODEL,
-      temperature: 0,
-      messages: [
-        {
-          role: 'system',
-          content: `You are a translator for mining job titles. Input: a JSON object {"titles":[...]}. Output: ONLY a JSON object {"translations":[...]} with one translation per input item, in the same order, written in ${LANG_NAMES[target]}. Preserve job-title style (no sentences, no explanations, no quotes around items). If an item is already in ${LANG_NAMES[target]}, return it unchanged.`,
-        },
-        { role: 'user', content: JSON.stringify({ titles }) },
-      ],
-    }),
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!res.ok) throw new Error(`OrcaRouter HTTP ${res.status}`);
-  const data = await res.json();
-  const raw = data.choices?.[0]?.message?.content || '';
-  const m = raw.match(/\{[\s\S]*\}/);
-  const parsed = JSON.parse(m ? m[0] : raw);
-  const arr = Array.isArray(parsed) ? parsed : parsed.translations;
-  if (!Array.isArray(arr) || arr.length !== titles.length) throw new Error('translation shape mismatch');
-  return arr.map((s) => String(s || '').trim());
+    llmLog,
+  );
 }
 
 async function translateTitles(jobs) {
-  if (!process.env.ORCAROUTER_API_KEY) {
-    console.log('ℹ Translations skipped (set ORCAROUTER_API_KEY to enable)');
+  if (!llmChain.length) {
+    console.log(
+      'ℹ Translations skipped (set MISTRAL_API_KEY / CLOUDFLARE_API_TOKEN+CLOUDFLARE_ACCOUNT_ID / OPENCODE_GO_API_KEY to enable)'
+    );
     return;
   }
   let cache = {};
@@ -1809,7 +2315,136 @@ async function translateTitles(jobs) {
   console.log(`✓ translations available for ${jobs.filter((j) => j.translations).length}/${jobs.length} jobs`);
 }
 
+/* ------------------------- one-time offline repair ------------------------ */
+
+/** Re-derives `country` from the structured location string only (no description
+ *  fallback — stored countries derived with more context must never be overridden
+ *  by description boilerplate) and re-parses `salary` with the current parser.
+ *  Never touches source content; keeps slugs so existing URLs stay valid.
+ *  Run: node scripts/ingest.mjs --repair */
+/** Local-currency fallbacks (mirrors parseSalary) — a stored salary whose currency
+ *  belongs to a country other than the job's is a stale/wrong fallback. */
+const LOCAL_CURRENCY = { CAD: 'CA', AUD: 'AU', ZAR: 'ZA', BRL: 'BR', CLP: 'CL', PEN: 'PE', MXN: 'MX' };
+/** Explicitly text-derived currencies worth keeping if a re-parse comes up empty
+ *  (descriptions are stored truncated, so the original figures may be gone). */
+const SAFE_CURRENCY = (cur, oldCountry) =>
+  ['USD', 'EUR', 'GBP'].includes(cur) ||
+  (cur === 'CAD' && oldCountry === 'CA') ||
+  (cur === 'AUD' && oldCountry === 'AU');
+const garbagePeriod = (s) => s && (s.period === 'day' || s.period === 'hour') && s.min >= 10000;
+
+async function repair() {
+  const feed = JSON.parse(await readFile(OUT, 'utf8'));
+  const jobs = Array.isArray(feed) ? feed : feed.jobs || [];
+  let fixedCountry = 0;
+  let fixedSalary = 0;
+  for (const j of jobs) {
+    const oldSalary = j.salary ?? null;
+    const oldCountry = j.country;
+    let countryChanged = false;
+    if (j.locationRaw) {
+      // City (first comma segment) first — it is the unambiguous part; extra
+      // segments can mislead ("Lima, Santiago De Surco" is Peru, not Chile).
+      // Full location string as fallback ("St. George, Utah"). If nothing
+      // resolves, keep the stored country — no description fallback here.
+      const { city } = splitLocation(j.locationRaw);
+      let c = detectCountry(city || '');
+      if (c === 'GLOBAL') c = detectCountry(j.locationRaw);
+      if (c !== 'GLOBAL' && c !== j.country) {
+        console.log(`country ${j.country} → ${c}: ${j.company} · ${j.locationRaw} (${j.slug})`);
+        j.country = c;
+        fixedCountry++;
+        countryChanged = true;
+      } else if (c === 'GLOBAL' && j.country !== 'GLOBAL') {
+        // Location names no supported country: if the stored country only matches
+        // via the legacy substring rule, it is an artifact ("Dominican" → PE).
+        const legacy = detectCountryLegacy(j.locationRaw);
+        if (legacy !== 'GLOBAL' && legacy === j.country) {
+          console.log(`country ${j.country} → GLOBAL (substring artifact): ${j.company} · ${j.locationRaw} (${j.slug})`);
+          j.country = 'GLOBAL';
+          fixedCountry++;
+          countryChanged = true;
+        }
+      }
+    } else if (j.source === 'sapsf-csb' && j.title) {
+      // CSB titles embed the posting location ("(Round Mountain, NV, US)") —
+      // employer-provided structure. Records ingested via the Google-base RSS
+      // path predate locationRaw and would otherwise stay stuck forever.
+      const loc = parseTitleLocation(j.title);
+      if (loc) {
+        if (!j.locationRaw) j.locationRaw = loc.locationRaw;
+        if (!j.city) j.city = loc.city;
+        if (loc.code !== j.country) {
+          console.log(`country ${j.country} → ${loc.code} (title location): ${j.company} · ${j.title} (${j.slug})`);
+          j.country = loc.code;
+          fixedCountry++;
+          countryChanged = true;
+        }
+      }
+    }
+    // Re-parse salary only where the stored value is affected by the bugs this
+    // repair fixes: the country changed, the currency is a stale fallback, or
+    // the period is implausible ("150,000/day" = a yearly figure mis-flagged).
+    const staleCurrency =
+      oldSalary && LOCAL_CURRENCY[oldSalary.currency] && LOCAL_CURRENCY[oldSalary.currency] !== j.country;
+    if (j.description && (countryChanged || staleCurrency || garbagePeriod(oldSalary))) {
+      const s = parseSalary(stripTags(decodeEntities(j.description)), j.country);
+      // Keep an explicitly-derived value when the re-parse finds nothing.
+      if (s !== null || !oldSalary || !SAFE_CURRENCY(oldSalary.currency, oldCountry)) {
+        if (JSON.stringify(s) !== JSON.stringify(oldSalary)) fixedSalary++;
+        j.salary = s;
+      }
+    }
+  }
+  await writeFile(OUT, JSON.stringify({ ...feed, jobs }, null, 2));
+  console.log('---');
+  console.log(`Repair done: ${fixedCountry} countries, ${fixedSalary} salaries updated → ${path.relative(ROOT, OUT)}`);
+}
+
 /* --------------------------------- main ----------------------------------- */
+
+/* ------------------------- niche filter (2026-09-10) ----------------------- */
+
+const ALLOWED_COUNTRIES = new Set(['PE', 'CL', 'CA', 'US', 'AU']);
+
+/** Jerarquía del nicho — lo ÚNICO que entra al feed:
+ *  tier 1 → Perú; tier 2 → remoto desde Perú (potencias o GLOBAL);
+ *  tier 3 → extranjero (CL/CA/US/AU) que reporta visa o declara apertura a
+ *  candidatos internacionales (Job Bank fglo=1). Todo lo demás: fuera. */
+function inNiche(j) {
+  if (j.country === 'PE') return true;
+  if (ALLOWED_COUNTRIES.has(j.country)) {
+    if (j.remote) return true;
+    return j.visaReported === true || j.openToInternational === true;
+  }
+  if (j.country === 'GLOBAL') return j.remote === true;
+  return false;
+}
+
+/** Offline prune of the existing feed — applies the niche rules + TTL without
+ *  re-fetching any source (keeps Apify/Adzuna rows captured with CI secrets).
+ *  Run: node scripts/ingest.mjs --prune */
+async function prune() {
+  const feed = JSON.parse(await readFile(OUT, 'utf8'));
+  const jobs = Array.isArray(feed) ? feed : feed.jobs || [];
+  const cutoff = Date.now() - TTL_DAYS * 86400000;
+  const niche = jobs.filter((j) => {
+    const t = Date.parse(j.postedAt);
+    return Number.isFinite(t) && t >= cutoff && t <= Date.now() + 86400000 && inNiche(j);
+  });
+  niche.sort((a, b) => b.postedAt.localeCompare(a.postedAt));
+  await writeFile(
+    OUT,
+    JSON.stringify({ generatedAt: new Date().toISOString(), jobs: niche }, null, 2)
+  );
+  console.log('---');
+  console.log(
+    `Prune done: ${niche.length}/${jobs.length} jobs kept (nicho PE/CL/CA/US/AU) → ${path.relative(ROOT, OUT)}`
+  );
+  const byCountry = {};
+  for (const j of niche) byCountry[j.country] = (byCountry[j.country] || 0) + 1;
+  console.log('By country:', JSON.stringify(byCountry));
+}
 
 async function main() {
   const config = JSON.parse(await readFile(CONFIG, 'utf8'));
@@ -1843,7 +2478,7 @@ async function main() {
   }
 
   for (const g of config.generic) {
-    const fetcher = { arbeitnow: fetchArbeitnow, remotive: fetchRemotive }[g.platform];
+    const fetcher = { arbeitnow: fetchArbeitnow, remotive: fetchRemotive, remoteok: fetchRemoteok }[g.platform];
     if (!fetcher) {
       errors.push(`unsupported generic platform ${g.platform}`);
       continue;
@@ -1895,19 +2530,47 @@ async function main() {
   }
 
   if (config.linkedin?.platform === 'apify-linkedin') {
+    if (!lmActive('linkedin')) {
+      console.log(`ℹ apify-linkedin skipped (not in LM_SOURCES: ${LM_SOURCES.join(',')})`);
+    } else {
+      try {
+        const jobs = await fetchApifyLinkedin(config.linkedin, prevById);
+        all.push(...jobs);
+        if (jobs.length) console.log(`✓ apify-linkedin → ${jobs.length} jobs`);
+      } catch (err) {
+        errors.push(`apify-linkedin: ${err.message}`);
+        console.error(`✗ apify-linkedin → ${err.message}`);
+      }
+    }
+  }
+
+  // Apify marketplace sources: after LinkedIn in dedupe priority, before Adzuna,
+  // which stays LAST so official/direct sources win the dedupe.
+  const APIFY_MARKETPLACES = [
+    ['indeed', fetchApifyIndeed],
+    ['seek', fetchApifySeek],
+    ['glassdoor', fetchApifyGlassdoor],
+  ];
+  for (const [key, fetcher] of APIFY_MARKETPLACES) {
+    const cfg = config[key];
+    if (!cfg) continue;
+    if (!lmActive(key)) {
+      console.log(`ℹ ${cfg.platform || key} skipped (not in LM_SOURCES: ${LM_SOURCES.join(',')})`);
+      continue;
+    }
     try {
-      const jobs = await fetchApifyLinkedin(config.linkedin, prevById);
+      const jobs = await fetcher(cfg, prevById);
       all.push(...jobs);
-      if (jobs.length) console.log(`✓ apify-linkedin → ${jobs.length} jobs`);
+      if (jobs.length) console.log(`✓ ${cfg.platform || key} → ${jobs.length} jobs`);
     } catch (err) {
-      errors.push(`apify-linkedin: ${err.message}`);
-      console.error(`✗ apify-linkedin → ${err.message}`);
+      errors.push(`${cfg.platform || key}: ${err.message}`);
+      console.error(`✗ ${cfg.platform || key} → ${err.message}`);
     }
   }
 
   // Adzuna runs LAST so direct/official sources win the dedupe when keys are present.
   if (process.env.ADZUNA_APP_ID && process.env.ADZUNA_APP_KEY) {
-    const codes = ['AU', 'CA', 'CL', 'PE', 'ZA', 'US', 'ID', 'GH', 'BR', 'MX', 'ZM', 'CD', 'MN', 'KZ'];
+    const codes = ['PE', 'CL', 'CA', 'US', 'AU']; // solo el nicho
     for (const code of codes) {
       try {
         const jobs = await fetchAdzuna({ code });
@@ -1922,17 +2585,29 @@ async function main() {
     console.log('ℹ Adzuna skipped (set ADZUNA_APP_ID / ADZUNA_APP_KEY to enable)');
   }
 
+  // Location-truth policy (owner decisions 2026-09-09): auto-correct supported
+  // countries from the location string, exclude jobs located in unsupported
+  // countries, and flag uncorroborated countries for manual review — see
+  // applyLocationPolicy. Overrides from the ops panel win over everything.
+  const located = await applyLocationPolicy(all);
+
   // TTL: drop postings older than TTL_DAYS (and impossible future dates)
   const cutoff = Date.now() - TTL_DAYS * 86400000;
-  const fresh = all.filter((j) => {
+  const fresh = located.filter((j) => {
     const t = Date.parse(j.postedAt);
     return Number.isFinite(t) && t >= cutoff && t <= Date.now() + 86400000;
   });
-  const dropped = all.length - fresh.length;
+  let dropped = all.length - fresh.length;
+
+  // Nicho estricto (owner decisions 2026-09-10): solo PE/CL/CA/US/AU.
+  // GLOBAL entra únicamente si es remoto; del extranjero solo lo que reporta
+  // visa o declara apertura a candidatos internacionales (hard-hide del resto).
+  const niche = fresh.filter(inNiche);
+  dropped += fresh.length - niche.length;
 
   // Dedupe by company+title+country
   const seen = new Map();
-  for (const j of fresh) {
+  for (const j of niche) {
     const key = `${j.companySlug}::${normTitle(j.title)}::${j.country}`;
     if (!seen.has(key)) seen.set(key, j);
   }
@@ -1956,7 +2631,19 @@ async function main() {
   if (errors.length) console.log('Errors:', JSON.stringify(errors, null, 2));
 }
 
-main().catch((err) => {
-  console.error('Ingestion failed:', err);
-  process.exit(1);
-});
+if (process.argv.includes('--prune')) {
+  prune().catch((err) => {
+    console.error('Prune failed:', err);
+    process.exit(1);
+  });
+} else if (process.argv.includes('--repair')) {
+  repair().catch((err) => {
+    console.error('Repair failed:', err);
+    process.exit(1);
+  });
+} else {
+  main().catch((err) => {
+    console.error('Ingestion failed:', err);
+    process.exit(1);
+  });
+}

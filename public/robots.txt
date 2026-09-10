@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://labormine.com/sitemap-index.xml
+Sitemap: https://labormin.com/sitemap-index.xml

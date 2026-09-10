@@ -1,4 +1,4 @@
-# Labormine — Design System
+# Labormin — Design System
 
 Apple HIG-informed (https://developer.apple.com/design/human-interface-guidelines):
 **clarity, deference, depth**. The UI recedes so real job content leads; motion is
@@ -6,9 +6,9 @@ purposeful and always interruptible; ads integrate visually but are never decept
 
 ## 1. Brand
 
-- Product: **Labormine** — global mining jobs, mapped to your passport.
-- Company: **Bit SamurAI** (footer: "A Bit SamurAI product.").
-- Voice: direct, honest, no hype. Visa claims are always "reported".
+- Product: **Labormin** — empleos mineros para peruanos: Perú primero, remoto y el extranjero.
+- Company: **Bit SamurAI** (footer: "Un producto de Bit SamurAI.").
+- Voice: directo, honesto, sin hype, en español. Señales de visa siempre "reported"/"verifica con el empleador". Aspiracional sin promesas de ingresos.
 
 ## 2. Color — "dark industrial premium"
 
@@ -69,24 +69,22 @@ filled amber (primary) or graphite outline (secondary). Never tint text below
 
 | Component | Role |
 | --- | --- |
-| `Layout.astro` | SEO meta, canonical + hreflang, fonts, AdSense script, geo bootstrap, reveal observer |
-| `Header/Footer.astro` | nav + locale switcher / legal links + disclosures |
+| `Layout.astro` | SEO meta, canonical, fonts, AdSense script, reveal observer (usuario fijo Perú) |
+| `Header/Footer.astro` | nav (empleos, rutas, eventos, guías) + CTA / legal links + disclosures |
 | `Chapter.astro` | scrollytelling section (sticky text + reveal content) |
-| `JobCard.astro` | server-rendered job card (used in spotlights/related) |
-| `AdSlot.astro` | labeled AdSense unit (in-feed/in-content) |
-| `VisaBadge.astro` | "Visa support reported" pill |
-| `CountrySelector.astro` | destination (country) or nationality picker, persisted |
+| `JobCard.astro` | server-rendered job card (tier badges, salary chip, international badge) |
+| `AdSlot.astro` | labeled AdSense unit (in-feed/in-content; siempre "Anuncio") |
 | `JobDrawer.astro` | quick-view `<dialog>` with apply-at-source CTA |
-| `pages/HomeView` | 6-chapter scrollytelling home |
-| `pages/JobsView` | full list + client filters (country/category/type/visa/search) |
+| `pages/HomeView` | 8-chapter tiered home (Perú → eventos → remoto → extranjero → pathways → guías) |
+| `pages/JobsView` | full list ordered by tiers + client filters (country/category/type/visa/search) |
 | `pages/JobDetailView` | detail + JSON-LD JobPosting + related + apply |
-| `pages/PathwaysView` | nationality → official visa pathways matrix |
+| `pages/PathwaysView` | official visa pathways filtered to Peruvian eligibility (server-rendered) |
+| `pages/EventsView` | curated mining events (presencial PE / virtual potencias) |
 
 ## 8. Accessibility
 
 - Landmarks: `header/main/footer/article/aside`; dialogs are native `<dialog>`.
-- All filters/inputs have explicit `<label>`s; icon-only buttons have
-  `aria-label`s; locale switcher exposes `hreflang`.
+- All filters/inputs have explicit `<label>`s; icon-only buttons have `aria-label`s.
 - Focus: visible amber focus on all interactive elements (`focus:border-brand-500`).
-- Content is fully readable with JS disabled except the two hydrated home chapters
-  (skeletons + links to `/jobs` remain).
+- Content is fully readable with JS disabled — all chapters are server-rendered;
+  JS only powers filters, the quick-view drawer and the AI clear-view toggle.

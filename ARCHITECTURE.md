@@ -1,53 +1,60 @@
-# Labormine — Architecture
+# Labormin — Architecture
 
-Labormine (a Bit SamurAI product) is a global mining-jobs hub. It presents real,
-publicly-sourced mining job listings through a scroll-driven narrative, filters by
-nationality context (home country → visa-eligible → remote), and monetizes with
-clearly-labeled native Google AdSense placements.
+Labormin (a Bit SamurAI product) is the **Peru-first** mining-jobs hub: a
+Spanish-only, static site for an aspirational Peruvian audience. Real listings
+from public sources are filtered to a strict niche (PE → remote → abroad with
+reported visa support) at ingest, ordered by that tier hierarchy, and monetized
+with clearly-labeled native Google AdSense placements. The site also hosts
+official-source visa pathways for Peruvians, hand-curated mining events, and
+original guides/FAQ.
 
 ## 1. System overview
 
 ```
-                 ┌──────────────────────────────────────────────┐
-                 │  Public job sources                          │
-                 │  • Greenhouse / Lever boards API             │
-                 │  • Employer portals (SCC CAPPER, HiringRoom, │
-                 │    SuccessFactors CSB, Oracle HCM, PageUp,   │
-                 │    SmartRecruiters, Eightfold, Taleo RSS)    │
-                 │  • Mining boards (Careermine, Brunel,        │
-                 │    Globe 24-7, CA Mining, EmpleosMineros)    │
-                 │  • LatAm boards (Computrabajo, Bumeran,      │
-                 │    Laborum — Navent API)                     │
-                 │  • Government (Job Bank Canada) / PNet       │
-                 │  • Arbeitnow / Remotive / Adzuna (keyed)     │
-                 │  • LinkedIn top-50 seed via Apify (keyed)    │
-                 └────────────────────┬─────────────────────────┘
-                                      │  scripts/ingest.mjs (node 22, keys optional)
-                                      ▼
-                 ┌──────────────────────────────────────────────┐
-                 │  src/data/jobs.json       normalized,        │
-                 │  (committed to git)       deduped, 30-day TTL│
-                 │  src/data/translation-cache.json (titles)    │
-                 └────────────────────┬─────────────────────────┘
-                                      │  GitHub Actions cron (daily 04:00 UTC)
-                                      │  .github/workflows/refresh-jobs.yml
-                                      ▼
-                 ┌──────────────────────────────────────────────┐
-                 │  Astro 7 static build    3 locales ×         │
-                 │  + Cloudflare adapter    (home, /jobs,       │
-                 │                          /jobs/[slug], …)    │
-                 └────────────────────┬─────────────────────────┘
-                                      ▼
-                 ┌──────────────────────────────────────────────┐
-                 │  Cloudflare Pages        root = es (default),│
-                 │                          /en, /pt            │
-                 │                          edge: /api/geo       │
-                 └──────────────────────────────────────────────┘
+                  ┌──────────────────────────────────────────────┐
+                  │  Public job sources (nicho: PE/CL/CA/US/AU)  │
+                  │  • Greenhouse / Lever boards API             │
+                  │  • Employer portals (SCC CAPPER, HiringRoom, │
+                  │    SuccessFactors CSB, Oracle HCM, PageUp,   │
+                  │    SmartRecruiters, Taleo RSS)               │
+                  │  • Mining boards (Careermine, Brunel,        │
+                  │    Globe 24-7, CA Mining, EmpleosMineros)    │
+                  │  • LatAm boards (Computrabajo PE/CL,         │
+                  │    Bumeran, Laborum — Navent API)            │
+                  │  • Government (Job Bank Canada, fglo=1)      │
+                  │  • Arbeitnow / Remotive / RemoteOK /         │
+                  │    Adzuna (keyed, solo los 5 países)         │
+                  │  • LinkedIn top-50 seed via Apify (keyed)    │
+                  └────────────────────┬─────────────────────────┘
+                                       │  scripts/ingest.mjs (node 22, keys optional)
+                                       │  inNiche(): hard-hide fuera de los tiers
+                                       ▼
+                  ┌──────────────────────────────────────────────┐
+                  │  src/data/jobs.json       normalized,        │
+                  │  (committed to git)       deduped, 30-day TTL│
+                  │  src/data/translation-cache.json (titles es) │
+                  └────────────────────┬─────────────────────────┘
+                                       │  GitHub Actions cron (daily 04:00 UTC)
+                                       │  .github/workflows/refresh-jobs.yml
+                                       ▼
+                  ┌──────────────────────────────────────────────┐
+                  │  Astro 7 static build    es único (raíz) +   │
+                  │  + Cloudflare adapter    /jobs/[slug] × ~400 │
+                  │                          /eventos, /guias,   │
+                  │                          /faq, /terms, …     │
+                  └────────────────────┬─────────────────────────┘
+                                       ▼
+                  ┌──────────────────────────────────────────────┐
+                  │  Cloudflare Pages        es en la raíz;      │
+                  │                          usuario fijo Perú;  │
+                  │                          SSR: /api/translate- │
+                  │                          description          │
+                  └──────────────────────────────────────────────┘
 ```
 
 Design principle: the site is **static-first**. The only on-demand route is
-`/api/geo`. Freshness comes from rebuilding the feed and the site on a schedule,
-not from runtime API calls.
+`/api/translate-description` (AI clear view). Freshness comes from rebuilding
+the feed and the site on a schedule, not from runtime API calls.
 
 ## 2. Data model
 
@@ -61,15 +68,16 @@ Schemas live in `src/schemas.ts` (Zod) and are enforced at build time by
 | `slug` | `company-title-country-id`, used for `/jobs/[slug]` |
 | `company`, `companySlug` | normalized display + dedupe key |
 | `source` | platform id (see §3) |
-| `country` | ISO-2 from the 14 supported mining countries, else `GLOBAL` |
+| `country` | ISO-2 of a niche country (PE/CL/CA/US/AU), else `GLOBAL` (remotes only) |
 | `city`, `locationRaw` | split from source location string |
 | `remote` | boolean |
 | `visaReported` | keyword heuristic — surfaced as "reported", never guaranteed |
+| `openToInternational?` | set for Job Bank `fglo=1` rows (government-declared international candidacy); surfaces as a badge and counts as tier 3 |
 | `category` | `exploration · drill-blast · geology · hse · maintenance · processing · engineering · operations · other` |
 | `salary` | `{min, max, currency, period}` or null (parsed heuristically) |
 | `postedAt` | ISO date; **older than 30 days is dropped at ingest** |
 | `url` | original posting — every UI path must link back here |
-| `description` | sanitized HTML (tags stripped → entities decoded → paragraphs). **Never translated.** |
+| `description` | sanitized HTML (tags stripped → entities decoded → paragraphs). Never translated at ingest; the view layer can render an on-demand AI "clear version" (see §4) |
 | `translations?` | `{es,en,pt}` auto-translated **titles** with a visible "auto-translated" flag in the UI |
 
 Dedupe key: `companySlug + normalized-title + country`. Stale cutoff: 30 days.
@@ -85,15 +93,30 @@ Titles cache: `src/data/translation-cache.json` (committed; keyed `"<lang>::<tit
 | `officialUrl` | **government source** — required |
 | `lastVerifiedAt` | re-verify date — required, surfaced in UI |
 
-Current seed (verified 2026-09-08): AU 462 / 417 / 482 / 500, CA IEC Working
-Holiday + Young Professionals + TFWP + study-permit work, US H-2B.
+Current seed (verified 2026-09-08/10): AU 462 / 417 / 482 / 500, CA IEC Working
+Holiday + Young Professionals + TFWP + study-permit work, US H-2B, and **CL —
+Vacaciones y Trabajo Alianza del Pacífico** (peruanos 18–30, hasta 12 meses;
+verified 2026-09-10). `PathwaysView` filters to `eligibleNationalities ∋ PE` or
+null at build time.
+
+### Event (`src/data/events.json`, hand-curated — never scraped)
+| Field | Notes |
+| --- | --- |
+| `mode` | `presencial` (Peru only) or `virtual` (Peru or the power countries) |
+| `type` | `feria-laboral · expo · conferencia · webinar` |
+| `date` | ISO start date; month-precision entries carry "por confirmar" in `notes` |
+| `city`, `country` | display only |
+| `officialUrl` | **official source — required**; events without one don't enter |
+| `lastVerifiedAt` | re-verify date — required, surfaced in UI |
+
+Feed (`src/data/events.json`) is curated by hand; CI never writes it.
 
 ## 3. Job sources (policy)
 
 Every source must be **public and keyless** (JSON API, sitemap, RSS, or a
 server-rendered public listing page). All ingestion is **read-only** (GET, or
 POST only for keyless public search endpoints), sends a truthful
-`LabormineBot/1.0` UA by default (browser UA only where a site filters short
+`LaborminBot/1.0` UA by default (browser UA only where a site filters short
 UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 `src/data/companies.json`.
 
@@ -109,7 +132,6 @@ UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 | The Redpath Group, Barrick | `oracle-hcm` | Oracle Recruiting Cloud REST (`recruitingCEJobRequisitions`) + jobpostings sitemap for canonical URLs |
 | MMG (Las Bambas) | `pageup` | SSR results + JSON-LD detail (crawl-delay 5s) |
 | Anglo American | `smartrecruiters` | Public SmartRecruiters JSON API |
-| Vale | `eightfold` | Public Eightfold JSON API (descriptions included) |
 | Agnico Eagle | `taleo-rss` | Taleo custom job-list RSS (partial coverage) |
 
 ### Mining / LatAm / government boards (keyless)
@@ -120,9 +142,8 @@ UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 | Brunel | `brunel` | `/en/jobs/mining` facet + JSON-LD detail (mining filter applied) |
 | Globe 24-7 | `globe247` | WP Job Manager list + JSON-LD detail |
 | CA Mining | `camining` | Simple Job Board sitemap + HTML (mining filter; beware lookalike domain `caming.com` = pharma) |
-| Job Bank Canada | `jobbank` | Government SSR; Crawl-delay 5s; expired postings skipped |
-| PNet (ZA) | `pnet` | Preloaded JSON state + detail pages |
-| Computrabajo (PE/CL/MX) | `computrabajo` | SSR list (`-pN`) + JSON-LD JobPosting detail |
+| Job Bank Canada | `jobbank` | Government SSR; query `sort=M&fglo=1` (official international-candidates filter) → rows marked `openToInternational: true`; Crawl-delay 5s; expired postings skipped |
+| Computrabajo (PE/CL) | `computrabajo` | SSR list (`-pN`) + JSON-LD JobPosting detail |
 | Bumeran Perú, Laborum Chile | `navent` | **Keyless JSON `POST /api/avisos/searchV2`** with `x-site-id` + sitemap URL resolution. Undocumented API (documented exception); sitemap is the robots-clean fallback channel |
 | EmpleosMineros.cl | `empleosmineros` | Keyless JSON API (low volume, low quality) |
 
@@ -130,10 +151,26 @@ UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 
 | Source | Platform | Notes |
 | --- | --- | --- |
-| Arbeitnow, Remotive | generic | mining-keyword filtered |
-| Adzuna | `optionalKeyed` | runs LAST so official sources win dedupe |
+| Arbeitnow, Remotive, RemoteOK | generic | mining-keyword filtered; RemoteOK added 2026-09-10 to reinforce the remote tier |
+| Adzuna | `optionalKeyed` | **nicho: PE/CL/CA/US/AU only**; runs LAST so official sources win dedupe |
 | LinkedIn (top-50 MINING.COM seed) | `apify-linkedin` | **Guest-mode Apify actors** (`cheap_scraper` primary by company names; `kaix` cheaper-per-1k upgrade path when numeric company IDs are provided in `src/data/linkedin-company-ids.json`). No LinkedIn account/cookies involved. **Documented exception**: guest scraping of publicly-viewable job pages |
-| OrcaRouter titles | translations | optional; see §7 |
+| Indeed | `apify-indeed` | `factden/indeed-jobs-scraper`, pay-per-result. Markets in priority order **PE → CL → CA → US → AU** (keywords `minería`+`mining` in PE/CL); cap 100 is the **total per-run budget** and each query gets the remaining budget, so PE/CL fill first. Country = search scope. Runs Tue+Thu |
+| Seek (AU) | `apify-seek` | `epicscrapers/seek-job-scraper`, AU national keyword search. Search-result fields only (teaser + bullets, verbatim); URL built from the listing's own `roleId`/`id`. Runs Sat+Tue |
+| Glassdoor (CA/US/AU) | `apify-glassdoor` | `blackfalcondata/glassdoor-job-scraper`, country-scoped keyword search. Only markets that exist on Glassdoor (21 markets — **no South Africa site**). Runs Wed+Sun |
+| LLM chain (titles) | translations | optional; see §7 |
+
+**Marketplace aggregation via Apify — deliberate ToS decision (2026-09-09).** Seek,
+Indeed and Glassdoor prohibit direct scraping and their public APIs are closed, so
+they are ingested **exclusively through guest-mode Apify pay-per-result actors**
+(no accounts, no cookies, public listings only) — the same pattern already
+documented for LinkedIn. Rationale: Labormin links out to the original posting;
+no listing content is altered. Budget guard: all four Apify sources fit the
+Apify **Free plan ($5/mo credits)** with caps of 170 (LinkedIn, Mon/Wed/Fri/Sun),
+100 (Indeed, Tue/Thu), 200 (Seek, Sat+Tue) and 100 (Glassdoor, Wed+Sun) —
+≈ $4.93/mo ceiling. Weekday scheduling via `LM_SOURCES` in `refresh-jobs.yml`.
+Validation gate: if a marketplace returns 0 items consistently for 2 weeks, it is
+disabled in `companies.json` and the actor choice revisited. Pause order if the
+budget tightens: Seek, then Glassdoor.
 
 ### Performance guards
 - `maxPerSource` (default 1500) + per-source `cap` protect `jobs.json` size.
@@ -143,44 +180,60 @@ UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 - `INGEST_FAST=<n>` env caps every source at n items (local smoke tests only).
 
 ### Deliberately out of scope
-- **Seek, Careers24** (Apify-only + ToS explicitly prohibits scraping),
+- **Careers24** (Apify-only + ToS explicitly prohibits scraping),
   **Antofagasta** (SuccessFactors RKP legacy, session-token JS), **Collahuasi**
   (Imperva WAF) — revisit as a paid Apify wave if ever needed.
-- **Indeed / Glassdoor** — APIs dead, direct scraping Cloudflare-challenged,
-  ToS prohibits; only ever via Apify, and not until a deliberate decision.
+- **Glassdoor ZA, Seek outside AU** — no such market/site exists on those
+  boards; PE/CL marketplace coverage comes from Indeed + LinkedIn company seed.
+- **PNet (ZA), Computrabajo MX, Vale (BR)** — removed 2026-09-10: single-country
+  sources outside the niche (PE/CL/CA/US/AU).
 - **Minería en Línea** — job board discontinued.
 - **Never** fabricate listings to fill empty countries. Empty is honest; fake is fatal.
 
-## 4. Personalization & i18n
+## 4. Personalization & i18n (removed — niche decision 2026-09-10)
 
-- Locales: `es` (default, **no prefix — Spanish is the site's primary language**),
-  `en` (`/en`), `pt` (`/pt`). Dictionaries in `src/i18n/ui.ts`; route wrappers in
-  `src/pages/{en,pt}` render the same shared views
-  (`src/components/pages/*.astro`) with a `locale` prop.
-- `/api/geo` (on-demand, edge) maps `cf-ipcountry` → `{country, suggestedLocale}`
-  using the ES/PT country sets in the file. The client bootstrap in `Layout.astro`
-  rewrites the URL to the suggested locale **only if no stored preference exists**
-  (`lm-locale`); otherwise the user switches languages manually via the header
-  selector. No browser geolocation permission is ever requested; city-level data
-  is never requested or stored.
-- Job **titles** are auto-translated (es/en/pt) at ingest via OrcaRouter and shown
-  with a visible "auto-translated" badge + the original title. Job
-  **descriptions are never translated**.
-- Preference keys (localStorage): `lm-country` (work destination),
-  `lm-nationality` (passport), `lm-locale`.
+- **Spanish only, user fixed to Peru.** `es` lives at the root; the /en and /pt
+  route mirrors, the `/api/geo` edge route, the IP-based locale suggestion and
+  the `lm-country` / `lm-nationality` / `lm-locale` localStorage keys were all
+  removed. `DEFAULT_COUNTRY`/`DEFAULT_NATIONALITY` (`'PE'`, `src/lib/i18n.ts`)
+  replace any runtime detection; stale keys in old visitors' browsers are ignored.
+- The en/pt dictionaries in `src/i18n/ui.ts` stay dormant (typed, unused) for a
+  future LatAm (Spanish-speaking) expansion; `Locale` is currently `'es'`.
+- Job **titles** are auto-translated to **`es` only** at ingest via the
+  multi-provider LLM chain (`src/lib/llm.js`, §7) and shown
+  with a visible "auto-translated" badge + the original title. Job descriptions
+  are not translated at ingest.
+- **Description "clear view" (AI, on demand)** — `/api/translate-description`
+  (server, `prerender = false`). The client POSTs the description HTML already on
+  the page plus the target locale; one LLM call via the provider chain returns
+  structured JSON
+  (`summary`, `facts[{icon,label,value}]`, `sections[{heading,bullets}]`) which
+  the route renders to deterministic escaped HTML (key-facts grid + bullet
+  sections; icons from a fixed inline-SVG whitelist). It translates only when the
+  source language differs from the locale. Cache: Cloudflare Cache API keyed by
+  `lang + sha256(html)` + `Cache-Control: public, max-age=86400` in the browser;
+  per-IP rate limit (~20/h). Safeguards: original description is the default
+  view, a visible "generated with AI" badge + disclaimer are mandatory, a toggle
+  restores the original, facts stay verbatim, and output is never written to
+  `src/data/jobs.json` (view-layer only). Fail-open: any error → the UI keeps
+  the original and shows a notice.
+- Preference keys: none — the country context is fixed (Peru) at build time.
 
-## 5. Scrollytelling home
+## 5. Tiered home
 
-`HomeView.astro` renders chapters with `Chapter.astro` (sticky narrative column +
-reveal content column):
+`HomeView.astro` renders server-rendered chapters with `Chapter.astro` (sticky
+narrative column + reveal content column) in the niche hierarchy:
 
-1. Hero — nationality + destination selectors (client-persisted)
-2. *In your country* — hydrated client-side from the embedded index by `lm-country`
-3. *Your passport opens doors* — top pathways for `lm-nationality`
-4. Regional spotlights — server-rendered top-3 countries by job count (SEO-safe)
-5. *Remote worldwide* — server-rendered remote jobs
-6. CTA → `/jobs`
+1. Hero — fixed Peru-first promise, CTAs to `/jobs` and `/visa-pathways`
+2. *Minería en Perú* — top PE jobs (tier 1)
+3. *Eventos mineros* — 3 next curated events → `/eventos`
+4. *Remoto desde Perú* — remote jobs (tier 2)
+5. *Minería en el extranjero* — tier-3 jobs (visa reported / international)
+6. *Rutas de visa para peruanos* — PE-eligible pathways → `/visa-pathways`
+7. *Kit del postulante* — guías + FAQ teaser → `/guias`, `/faq`
+8. CTA → `/jobs`
 
+Everything is static (SEO-safe); no client hydration beyond the JobDrawer index.
 Motion: `IntersectionObserver` reveals (`.reveal` → `.is-visible`) with CSS
 scroll-driven `animation-timeline: view()` as progressive enhancement; both
 respect `prefers-reduced-motion`.
@@ -190,7 +243,8 @@ respect `prefers-reduced-motion`.
 - `<AdSlot slotId format layoutKey />` — single component for all placements.
   Renders a real `adsbygoogle` unit only when `PUBLIC_ADSENSE_CLIENT` is set in
   production; otherwise a neutral labeled placeholder so layout is testable.
-- Placements: home (2), `/jobs` in-feed every ~9 cards, `/jobs/[slug]` in-content.
+- Placements: home (2), `/jobs` in-feed every ~9 cards, `/jobs/[slug]` in-content,
+  `/visa-pathways` (1), `/eventos` (1).
 - **Policy constraints (non-negotiable):** every unit is labeled ("Ad" /
   "Anuncio" / "Anúncio"); units must not be designed to induce accidental clicks;
   ad density stays low. See DESIGN.md §6.
@@ -204,15 +258,20 @@ respect `prefers-reduced-motion`.
 | --- | --- | --- |
 | `PUBLIC_ADSENSE_CLIENT` | no | `ca-pub-…` publisher id; absent → labeled placeholders |
 | `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` | no | enables Adzuna country searches at ingest |
-| `APIFY_TOKEN` | no | enables LinkedIn top-50 ingest via Apify guest actors |
-| `ORCAROUTER_API_KEY` | no | auto-translates job titles (model: `ORCAROUTER_MODEL`, default `orcarouter/free`) |
+| `APIFY_TOKEN` | no | enables the Apify sources (`apify-linkedin` / `apify-indeed` / `apify-seek` / `apify-glassdoor`) via guest actors |
+| `LM_SOURCES` | no | CI-only: comma list of Apify platforms to run; derived from the weekday by `refresh-jobs.yml` (empty/unset = run all, e.g. local dev) |
+| `MISTRAL_API_KEY` / `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` / `OPENCODE_GO_API_KEY` | no | multi-provider LLM chain (`src/lib/llm.js`): auto-translates job titles at ingest and powers the on-demand description clear-view API. Failover order via `LLM_PROVIDER_ORDER` (default `MISTRAL_MODEL,WORKERS_AI_MODEL,OPENCODE_GO_MODEL`); models via `MISTRAL_MODEL` (`codestral-2508`) / `WORKERS_AI_MODEL` (`@cf/qwen/qwen3-30b-a3b-fp8`) / `OPENCODE_GO_MODEL` (`mimo-v2.5`); providers without credentials are skipped |
 | `INGEST_FAST` | no | local only: caps every source at N items for fast smoke tests |
 
 ## 8. CI / deployment
 
-- GitHub Actions (`refresh-jobs.yml`): daily `node scripts/ingest.mjs`, commits
-  `src/data/jobs.json` if changed, push triggers the Cloudflare Pages Git build
-  (or `CLOUDFLARE_DEPLOY_HOOK` secret as fallback).
+- GitHub Actions (`refresh-jobs.yml`): daily `node scripts/ingest.mjs` (04:00 UTC),
+  commits `src/data/jobs.json` if changed, push triggers the Cloudflare Pages Git
+  build (or `CLOUDFLARE_DEPLOY_HOOK` secret as fallback). The paid Apify sources
+  are spread across the week via a derived `LM_SOURCES` (see §3) — official/keyless
+  sources and Adzuna run every day. `workflow_dispatch` accepts a `sources` input
+  to override the weekday schedule for testing. Offline re-filter without
+  re-fetching: `node scripts/ingest.mjs --prune` (nicho rules + TTL).
 - Cloudflare Pages: framework preset Astro, Node 22. pnpm is pinned via
   `packageManager` in package.json (12.3.x); CI installs it automatically via
   `pnpm/action-setup`. On Cloudflare Pages set `PNPM_VERSION=12.3.4` in the
@@ -221,10 +280,12 @@ respect `prefers-reduced-motion`.
 
 ## 9. Phase 2 roadmap
 
-1. Apify wave for the excluded boards (Seek, Careers24, Antofagasta RKP,
-   Collahuasi) — paid actors, deliberate ToS decision required
-2. Indeed pilot in "enrichment" mode (metadata + outbound link only, via Apify)
-3. Full job-description translation (paid tier) if titles-only proves insufficient
+1. Apify wave for the excluded boards (Careers24, Antofagasta RKP, Collahuasi) —
+   paid actors, deliberate ToS decision required
+2. ~~Indeed pilot in "enrichment" mode~~ — superseded 2026-09-09: Indeed, Seek (AU)
+   and Glassdoor ship as **full-feed** marketplace sources via Apify pay-per-result
+   actors (see §3); the deliberate ToS decision is documented there
+3. ~~Full job-description translation~~ — shipped as the on-demand AI clear view (`/api/translate-description`); possible follow-up: pre-warming popular descriptions in CI
 4. Salary slider + active age filter in the pathways matrix
 5. `/api/jobs` search endpoint (edge cache) if the client-side index outgrows memory
 6. Email alerts by nationality/country

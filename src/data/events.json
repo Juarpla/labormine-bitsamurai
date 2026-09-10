@@ -1,0 +1,31 @@
+{
+  "_comment": "Seed curado a mano (nunca inventar). Cada evento debe tener officialUrl de fuente oficial/primaria que confirme el evento y lastVerifiedAt real; si la fuente oficial no lo confirma, no entra al seed (p. ej. ferias CETEMIN 2026, retiradas el 2026-09-10 hasta que CETEMIN las publique en su web). endDate es opcional y marca el último día de eventos multi-día: mientras endDate >= hoy, el evento sigue listándose. Candidata PENDIENTE (sin fecha futura anunciada, no incluir aún): 'Mining Needs You Virtual Career Fair' (MiHR, Canadá, virtual, última edición 24-25 nov 2025 — mihr.ca; incluir cuando anuncien la próxima). Las fechas marcadas 'por confirmar' en notes son mes de referencia publicado por el organizador.",
+  "generatedAt": "2026-09-10",
+  "events": [
+    {
+      "id": "pe-expomina-2026",
+      "title": "EXPOMINA PERÚ 2026 (X edición)",
+      "mode": "presencial",
+      "type": "expo",
+      "country": "PE",
+      "city": "Lima",
+      "date": "2026-09-09",
+      "endDate": "2026-09-11",
+      "officialUrl": "https://expominaperu.com/",
+      "notes": "Del 9 al 11 de setiembre de 2026 en el Centro de Exposiciones Jockey. La feria minera más grande del Perú: proveedores, tecnología y networking con reclutadores del sector. Confirmada por Resolución de Cancillería N° 0052-2026-RE/SGG.",
+      "lastVerifiedAt": "2026-09-10"
+    },
+    {
+      "id": "pe-perumin-38-2027",
+      "title": "PERUMIN 38 Convención Minera",
+      "mode": "presencial",
+      "type": "conferencia",
+      "country": "PE",
+      "city": "Arequipa",
+      "date": "2027-09-01",
+      "officialUrl": "https://www.perumin.com/perumin37/public/es/noticia/anuncian-a-eeuu-como-pais-aliado-de-perumin-38-en-2027",
+      "notes": "Campo Ferial Cerro Juli, Arequipa — setiembre 2027 (fecha exacta por confirmar por el IIMP). EE. UU. será el País Aliado, según nota oficial del IIMP (verificada 2026-09-10). La convención minera más importante de Latinoamérica: gran punto de contacto con reclutadores y proveedores.",
+      "lastVerifiedAt": "2026-09-10"
+    }
+  ]
+}

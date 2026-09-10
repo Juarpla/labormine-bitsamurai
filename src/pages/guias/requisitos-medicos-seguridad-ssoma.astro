@@ -1,0 +1,61 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { useTranslations } from '../../lib/i18n';
+
+const locale = 'es' as const;
+const t = useTranslations(locale);
+---
+
+<Layout title="Requisitos médicos y de seguridad (SSOMA) para trabajar en mina — Labormin" description="Qué es el examen médico ocupacional, los certificados de seguridad y los documentos que piden las mineras y contratistas antes de contratar." locale={locale} path="/guias/requisitos-medicos-seguridad-ssoma">
+  <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-500">Guía · Requisitos</p>
+    <h1 class="mt-3 font-display text-4xl font-semibold leading-tight text-graphite-100 sm:text-5xl">
+      Requisitos médicos y de seguridad (SSOMA) para trabajar en mina
+    </h1>
+    <p class="mt-6 leading-relaxed text-graphite-200">
+      En minería, la seguridad no es un trámite: es la condición para entrar a faena. Por eso los empleadores filtran primero por estos documentos. Tenerlos listos antes de postular te ahorra semanas y hace que tu candidatura pase el primer corte.
+    </p>
+
+    <h2 class="mt-10 font-display text-2xl font-semibold text-graphite-100">Examen médico ocupacional (EMO)</h2>
+    <p class="mt-3 leading-relaxed text-graphite-300">
+      Es la evaluación que certifica que estás apto para el trabajo que harás (altura, turnos, esfuerzo físico, tareas específicas). Cada empresa define el perfil médico del puesto y lo solicita con una clínica u ocupacionalista autorizada. Consejos prácticos:
+    </p>
+    <ul class="mt-4 space-y-2 text-sm leading-relaxed text-graphite-300">
+      <li>· Ten a mano tu historial básico: vacunas, condiciones médicas y medicamentos actuales — declarar en falso es causal de eliminación.</li>
+      <li>· Algunos puestos (altura, conducción) exigen pruebas específicas como el certificado de altura o la evaluación psicológica.</li>
+      <li>· La aptitud tiene vigencia: si tu proceso se alarga, probablemente te pedirán repetirlo.</li>
+    </ul>
+
+    <h2 class="mt-10 font-display text-2xl font-semibold text-graphite-100">Certificados de seguridad y salud (SSOMA)</h2>
+    <p class="mt-3 leading-relaxed text-graphite-300">
+      Los cursos de seguridad ocupacional —inducciones, trabajos en altura, primeros auxilios, según el rol— son los certificados que más piden en las postulaciones de entrada. Se obtienen en institutos y centros de formación autorizados; institutos técnicos del sector (como CETEMIN en Lima y Arequipa) los dictan junto con carreras técnicas cortas orientadas a minería.
+    </p>
+    <ul class="mt-4 space-y-2 text-sm leading-relaxed text-graphite-300">
+      <li>· Prioriza cursos <strong class="text-graphite-100">con certificado oficial y emisor identificable</strong>; las empresas verifican emisiones.</li>
+      <li>· Guarda cada certificado en PDF y físicamente; en faena te los pedirán reiteradas veces.</li>
+      <li>· Las licencias profesionales (A-II en adelante, según el rol) son filtro para puestos de conducción de equipo pesado.</li>
+    </ul>
+
+    <h2 class="mt-10 font-display text-2xl font-semibold text-graphite-100">Documentos que casi siempre piden</h2>
+    <ul class="mt-4 space-y-2 text-sm leading-relaxed text-graphite-300">
+      <li>· DNI vigente y CV actualizado.</li>
+      <li>· Certificado Único Laboral (CUL) y antecedentes policiales/penales — se tramitan en línea, gratuitos en sus canales oficiales.</li>
+      <li>· Certificados de estudios (secundaria o técnicos).</li>
+      <li>· Licencia de conducir profesional cuando el puesto lo requiere.</li>
+    </ul>
+
+    <h2 class="mt-10 font-display text-2xl font-semibold text-graphite-100">Si tu destino es el extranjero</h2>
+    <p class="mt-3 leading-relaxed text-graphite-300">
+      Cada país suma sus propios requisitos (seguro médico, antecedentes apostillados, pasaporte vigente). En la <a class="text-brand-400 hover:underline" href="/visa-pathways">sección de rutas de visa</a> recopilamos las fuentes oficiales de Chile, Canadá, EE. UU. y Australia para peruanos — incluyendo la Working Holiday Alianza del Pacífico hacia Chile (18–30 años).
+    </p>
+
+    <div class="mt-12 rounded-2xl border border-graphite-700 bg-graphite-900 p-5 text-sm leading-relaxed text-graphite-400">
+      ℹ Esta guía es información general: los requisitos exactos los define cada empleador y la autoridad competente de cada país. Verifica siempre en la fuente oficial antes de pagar cualquier trámite.
+    </div>
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a href="/jobs" class="rounded-full bg-brand-500 px-6 py-3 text-sm font-semibold text-graphite-950 hover:bg-brand-400">Ver empleos disponibles</a>
+      <a href="/faq" class="rounded-full border border-graphite-600 px-6 py-3 text-sm font-semibold text-graphite-100 hover:border-brand-500">Preguntas frecuentes</a>
+    </div>
+  </article>
+</Layout>

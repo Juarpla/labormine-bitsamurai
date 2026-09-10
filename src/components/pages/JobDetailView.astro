@@ -2,8 +2,8 @@
 import type { Job } from '../../schemas';
 import AdSlot from '../AdSlot.astro';
 import JobCard from '../JobCard.astro';
-import { useTranslations, countryName, type Locale } from '../../lib/i18n';
-import { formatSalary, formatDate, relatedJobs, titleFor, isAutoTranslated } from '../../lib/jobs';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import { formatSalary, formatDate, relatedJobs, titleFor, isAutoTranslated, detectLang, locationLine } from '../../lib/jobs';
 
 interface Props {
   job: Job;
@@ -13,6 +13,9 @@ const { job, locale = 'es' } = Astro.props;
 const t = useTranslations(locale);
 const related = relatedJobs(job, 3);
 const backHref = locale === 'es' ? '/jobs' : `/${locale}/jobs`;
+const needsTranslation = detectLang(job.description) !== locale;
+const descText = job.description.replace(/<[^>]*>/g, ' ').trim();
+const showClarity = descText.length >= 80;
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -54,6 +57,9 @@ const jsonLd = {
       <span class="rounded-full bg-graphite-800 px-2.5 py-1">{job.category}</span>
       <span class="rounded-full bg-graphite-800 px-2.5 py-1">{job.source}</span>
       {job.remote && <span class="rounded-full bg-graphite-800 px-2.5 py-1 text-brand-300">↗ {t('card.remote')}</span>}
+      {job.openToInternational && (
+        <span class="rounded-full border border-brand-600/60 bg-brand-500/10 px-2.5 py-1 text-brand-400">✦ {t('card.international')}</span>
+      )}
       <time datetime={job.postedAt}>{t('card.posted')} {formatDate(job.postedAt, locale)}</time>
     </div>
     <h1 class="mt-4 font-display text-3xl font-semibold leading-tight text-graphite-100 sm:text-4xl">
@@ -69,7 +75,7 @@ const jsonLd = {
     )}
     <p class="mt-3 text-lg text-graphite-200">
       <span class="font-medium">{job.company}</span>
-      <span class="text-graphite-400"> · {job.city ?? t('card.global')} · {countryName(job.country)}</span>
+      <span class="text-graphite-400"> · {locationLine(job, t)}</span>
     </p>
     {job.salary && (
       <p class="mt-2 text-sm font-semibold text-brand-400">{formatSalary(job)}</p>
@@ -89,10 +95,15 @@ const jsonLd = {
           ✦ {t('card.visa')}
         </span>
       )}
+      {job.openToInternational && !job.visaReported && (
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-brand-600/60 bg-brand-500/10 px-4 py-3 text-xs font-medium text-brand-400">
+          ✦ {t('card.international')}
+        </span>
+      )}
     </div>
   </header>
 
-  {job.visaReported && (
+  {(job.visaReported || job.openToInternational) && (
     <p class="mt-6 rounded-xl border border-graphite-700 bg-graphite-900 p-4 text-sm text-graphite-400">
       ℹ {t('drawer.visaNote')}
     </p>
@@ -100,8 +111,60 @@ const jsonLd = {
 
   <AdSlot slotId="job-detail-1" format="horizontal" locale={locale} />
 
-  <div class="prose-invert mt-8 max-w-none space-y-4 text-base leading-relaxed text-graphite-200 [&_a]:text-brand-400">
-    <Fragment set:html={job.description} />
+  {showClarity && (
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+      <button
+        id="lm-clarity-btn"
+        type="button"
+        class="rounded-full border border-brand-600/60 bg-brand-500/10 px-4 py-2 text-sm font-medium text-brand-400 transition-colors hover:border-brand-500 hover:bg-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        ✦ {needsTranslation ? t('job.clarityCtaTranslate') : t('job.clarityCta')}
+      </button>
+    </div>
+  )}
+
+  <div id="lm-clarity-root" class="relative mt-4">
+    <div
+      id="lm-desc"
+      class="prose-invert max-w-none space-y-4 text-base leading-relaxed text-graphite-200 [&_a]:text-brand-400"
+    >
+      <Fragment set:html={job.description} />
+    </div>
+    <div
+      id="lm-clarity-overlay"
+      class="absolute inset-0 z-10 hidden rounded-2xl bg-graphite-900/70 backdrop-blur-[2px]"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="sticky top-[30vh] flex justify-center pt-6">
+        <div class="flex flex-col items-center gap-2 rounded-2xl border border-graphite-700 bg-graphite-900/90 px-6 py-5 text-center shadow-lg">
+          <svg
+            class="bot-float h-12 w-12 text-brand-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <rect x="5" y="8" width="14" height="10" rx="3"></rect>
+            <path d="M12 8V5.5"></path>
+            <circle cx="12" cy="4" r="1.2"></circle>
+            <circle cx="9.5" cy="12.5" r="1.1" fill="currentColor" stroke="none"></circle>
+            <circle cx="14.5" cy="12.5" r="1.1" fill="currentColor" stroke="none"></circle>
+            <path d="M9.5 15.5h5"></path>
+          </svg>
+          <p class="text-sm font-medium text-graphite-100">{t('job.aiWorking')}</p>
+          <p class="text-xs text-graphite-400">{t('job.aiWorkingHint')}</p>
+          <div class="mt-1 flex gap-1" aria-hidden="true">
+            <span class="lm-dot h-1.5 w-1.5 rounded-full bg-brand-500"></span>
+            <span class="lm-dot h-1.5 w-1.5 rounded-full bg-brand-500" style="animation-delay:0.15s"></span>
+            <span class="lm-dot h-1.5 w-1.5 rounded-full bg-brand-500" style="animation-delay:0.3s"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p id="lm-clarity-error" class="mt-3 hidden text-xs text-graphite-400">⚠ {t('job.aiError')}</p>
   </div>
 
   <div class="mt-10">
@@ -126,3 +189,81 @@ const jsonLd = {
 </article>
 
 <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+<script define:vars={{ clarityT: { showOriginal: t('job.showOriginal'), disclaimer: t('job.aiDisclaimer') }, apiLang: locale }}>
+  (() => {
+    const btn = document.getElementById('lm-clarity-btn');
+    if (!btn) return;
+    const desc = document.getElementById('lm-desc');
+    const overlay = document.getElementById('lm-clarity-overlay');
+    const errorEl = document.getElementById('lm-clarity-error');
+    const originalHtml = desc.innerHTML;
+    const originalLabel = btn.textContent;
+    let clearHtml = null;
+    let state = 'original';
+    let busy = false;
+    let overlayTimer = null;
+
+    function setLabel(text) {
+      btn.textContent = text;
+    }
+    function showOverlay() {
+      overlay.classList.remove('hidden');
+    }
+    function hideOverlay() {
+      clearTimeout(overlayTimer);
+      overlay.classList.add('hidden');
+    }
+    function showClear() {
+      desc.innerHTML =
+        '<p class="rounded-xl border border-brand-600/50 bg-brand-500/5 p-3 text-xs leading-relaxed text-graphite-300">✦ ' +
+        clarityT.disclaimer +
+        '</p>' +
+        clearHtml;
+      state = 'clear';
+      setLabel('↺ ' + clarityT.showOriginal);
+    }
+    function showOriginal() {
+      desc.innerHTML = originalHtml;
+      state = 'original';
+      errorEl.classList.add('hidden');
+      setLabel(originalLabel);
+    }
+
+    btn.addEventListener('click', async () => {
+      if (busy) return;
+      if (state === 'clear') {
+        showOriginal();
+        return;
+      }
+      if (clearHtml) {
+        showClear();
+        return;
+      }
+      busy = true;
+      btn.disabled = true;
+      // Show the AI overlay only if the request is still pending after 250ms —
+      // cache hits swap content instantly with no loader flash.
+      overlayTimer = setTimeout(showOverlay, 250);
+      try {
+        const res = await fetch('/api/translate-description', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ html: originalHtml, lang: apiLang }),
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!data || !data.html) throw new Error('no html');
+        clearHtml = data.html;
+        errorEl.classList.add('hidden');
+        showClear();
+      } catch (err) {
+        errorEl.classList.remove('hidden');
+      } finally {
+        hideOverlay();
+        busy = false;
+        btn.disabled = false;
+      }
+    });
+  })();
+</script>

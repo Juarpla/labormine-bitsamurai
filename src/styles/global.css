@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Labormine — dark industrial premium (see DESIGN.md) */
+  /* Labormin — dark industrial premium (see DESIGN.md) */
   --color-graphite-950: #0a0b0e;
   --color-graphite-900: #10131a;
   --color-graphite-850: #141822;
@@ -132,4 +132,26 @@ body {
 dialog::backdrop {
   background: rgb(10 11 14 / 0.7);
   backdrop-filter: blur(4px);
+}
+
+/* --- AI clear-view overlay (job detail) --- */
+.bot-float {
+  animation: bot-float 2.2s ease-in-out infinite;
+}
+@keyframes bot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.lm-dot {
+  animation: lm-dot 1.1s ease-in-out infinite;
+}
+@keyframes lm-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bot-float,
+  .lm-dot {
+    animation: none !important;
+  }
 }

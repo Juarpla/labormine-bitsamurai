@@ -1,0 +1,59 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { useTranslations } from '../lib/i18n';
+
+const locale = 'es' as const;
+const t = useTranslations(locale);
+---
+
+<Layout title={`${t('footer.terms')} — Labormin`} description="Términos y condiciones de uso de Labormin." locale={locale} path="/terms">
+  <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+    <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('footer.terms')}</h1>
+
+    <div class="mt-8 space-y-6 text-sm leading-relaxed text-graphite-300">
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">1. Qué es Labormin</h2>
+        <p class="mt-2">
+          Labormin (operado por Bit SamurAI) es un agregador de ofertas de empleo de la industria minera. Recopilamos avisos publicados en fuentes públicas y legales —bolsas de empleo de los propios empleadores y plataformas públicas— y los mostramos enlazando siempre a la publicación original. Labormin <strong class="text-graphite-100">no es una agencia de empleo</strong>, no cobra por postular y no participa en los procesos de selección.
+        </p>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">2. Uso del sitio</h2>
+        <p class="mt-3">
+          El acceso es gratuito. Las ofertas se presentan tal como fueron publicadas por sus fuentes; no editamos su contenido. No garantizamos la disponibilidad, vigencia ni exactitud de cada aviso: la fuente original siempre prevalece.
+        </p>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">3. Sin garantía de empleo ni visa</h2>
+        <p class="mt-3">
+          Las señales como “apoyo de visa reportado” o “abierto a candidatos internacionales” provienen del texto de las ofertas o de filtros de las fuentes y son <strong class="text-graphite-100">heurísticas, no promesas</strong>. Las rutas de visa citan páginas oficiales de gobierno, pero cada trámite lo define la autoridad migratoria del país correspondiente. Ningún contenido de este sitio constituye asesoría legal, migratoria ni laboral.
+        </p>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">4. Enlaces a terceros</h2>
+        <p class="mt-3">
+          Cada oferta y cada evento enlaza a su fuente original en sitios de terceros, sobre los que no tenemos control ni responsabilidad. Al postular, tu relación es directa con el empleador.
+        </p>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">5. Publicidad</h2>
+        <p class="mt-3">
+          El sitio se financia con publicidad, integrada de forma nativa y <strong class="text-graphite-100">siempre etiquetada</strong> como “Anuncio”. Los anuncios y las cookies asociadas pueden estar a cargo de socios como Google AdSense — ver la <a class="text-brand-400 hover:underline" href="/privacy">Política de privacidad</a>.
+        </p>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">6. Propiedad intelectual</h2>
+        <p class="mt-3">
+          Las marcas y contenidos de las ofertas pertenecen a sus respectivos titulares. Los textos propios (guías, descripciones del sitio) son propiedad de Bit SamurAI y no pueden copiarse sin permiso.
+        </p>
+      </div>
+      <div>
+        <h2 class="font-display text-xl font-semibold text-graphite-100">7. Contacto</h2>
+        <p class="mt-3">
+          Dudas, correcciones o retiro de contenido: <a class="text-brand-400 hover:underline" href="/contact">página de contacto</a>.
+        </p>
+      </div>
+      <p class="text-xs text-graphite-500">Última actualización: 10 de setiembre de 2026.</p>
+    </div>
+  </article>
+</Layout>

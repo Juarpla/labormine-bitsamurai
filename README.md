@@ -1,4 +1,4 @@
-# Labormine
+# Labormin
 
 Global mining-jobs hub by Bit SamurAI. Real listings from public employer boards,
 matched to your nationality: your country first, then reported visa support,
