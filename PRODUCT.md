@@ -50,9 +50,14 @@ editados), salarios solo si los declara la fuente, y rutas de visa con
 - Feed refrescado por GitHub Actions cron (diario) que commitea
   `src/data/jobs.json`; re-poda offline con `node scripts/ingest.mjs --prune`.
 - Las reglas de nicho (`inNiche()`) se aplican en ingest, nunca en display.
-- Rutas de visa y eventos se re-verifican a mano contra la fuente oficial antes
-  de editar (`officialUrl` + `lastVerifiedAt` obligatorios); CI nunca escribe
-  eventos.
+- Rutas de visa y el **seed curado de eventos** se re-verifican a mano contra la
+  fuente oficial antes de editar (`officialUrl` + `lastVerifiedAt`
+  obligatorios); el CI nunca escribe el seed curado. Decisión 2026-09-11: una
+  **segunda capa de eventos scrapeados** (`src/data/events-scraped.json`,
+  webs oficiales de las ferias grandes + publicaciones de Facebook que
+  anuncian un evento fechado, vía Apify, cron semanal) vive
+  aparte en /eventos con badge "Agregado automáticamente" y CTA "verificar con
+  el organizador"; nunca entra al seed curado y el curado gana el dedup.
 - Monetización: solo publicidad (AdSense); proceso de admisión en
   `docs/ADSENSE-CHECKLIST.md`.
 - Deploy: Cloudflare Pages (Astro 7 estático + adapter Cloudflare); único

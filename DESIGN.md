@@ -86,6 +86,7 @@ filled amber (primary) or graphite outline (secondary). Never tint text below
 | `pages/JobDetailView` | detail + JSON-LD JobPosting + related + apply |
 | `pages/PathwaysView` | official visa pathways filtered to Peruvian eligibility (server-rendered) |
 | `pages/EventsView` | curated mining events (presencial PE / virtual potencias) |
+| `pages/PracticasView` | `/practicas` — internships/trainee/becarios PE-only, split out of the /jobs pool at build (`internship` flag from ingest); same ad anatomy as /jobs |
 
 ## 8. Accessibility
 

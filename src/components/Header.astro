@@ -11,11 +11,12 @@ const t = useTranslations(locale);
 
 const links = [
   { href: '/', label: t('nav.home') },
-  { href: '/jobs', label: t('nav.jobs') },
   { href: '/visa-pathways', label: t('nav.pathways') },
   { href: '/eventos', label: t('nav.eventos') },
   { href: '/guias', label: t('nav.guias') },
-  { href: '/about', label: t('nav.about') },
+  // Owner sign-off 2026-09-11: "después de Empleos" = último link del nav,
+  // pegado al CTA "Ver empleos" (Empleos no es link de nav: es el botón).
+  { href: '/practicas', label: t('nav.practicas') },
 ];
 ---
 

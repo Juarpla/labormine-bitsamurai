@@ -1,0 +1,50 @@
+name: Refresh scraped events
+
+on:
+  schedule:
+    - cron: '30 5 * * 0' # domingo 05:30 UTC (jobs usa lun–sáb a las 04:00)
+  workflow_dispatch: {}
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Puerta de validación a 2 semanas (desde el primer despliegue): ajustar
+      # CAP_FB y los actores en scripts/ingest-events.mjs según volumen real.
+      - name: Ingest scraped events
+        run: node scripts/ingest-events.mjs
+        env:
+          APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
+
+      - name: Commit refreshed feed (if changed)
+        run: |
+          git config user.name "labormin-bot"
+          git config user.email "bot@labormin.com"
+          if [[ -n "$(git status --porcelain src/data/events-scraped.json)" ]]; then
+            git add src/data/events-scraped.json
+            git commit -m "chore(data): refresh scraped events"
+            git push
+          else
+            echo "No changes in scraped events"
+          fi
+
+      # Solo necesario si Cloudflare Pages NO está conectado vía Git; si lo
+      # está, el push de arriba dispara el build.
+      - name: Trigger Cloudflare deploy hook (optional)
+        if: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK != '' }}
+        run: curl -sf -X POST "$CLOUDFLARE_DEPLOY_HOOK"
+        env:
+          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}

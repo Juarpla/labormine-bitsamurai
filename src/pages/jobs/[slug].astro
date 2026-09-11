@@ -1,10 +1,10 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import JobDetailView from '../../components/pages/JobDetailView.astro';
-import { jobs } from '../../lib/jobs';
+import { allJobs } from '../../lib/jobs';
 
 export function getStaticPaths() {
-  return jobs.map((job) => ({ params: { slug: job.slug }, props: { job } }));
+  return allJobs.map((job) => ({ params: { slug: job.slug }, props: { job } }));
 }
 
 const locale = 'es' as const;

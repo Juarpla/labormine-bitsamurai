@@ -191,6 +191,31 @@ the budget tightens: Seek, then Indeed.
 - **Minería en Línea** — job board discontinued.
 - **Never** fabricate listings to fill empty countries. Empty is honest; fake is fatal.
 
+### Events ingestion — scraped section (added 2026-09-11)
+
+The curated events seed (`src/data/events.json`, hand-verified `officialUrl` +
+`lastVerifiedAt`) stays hand-only. A separate pipeline
+(`scripts/ingest-events.mjs`, weekly Sunday cron in `refresh-events.yml`)
+writes `src/data/events-scraped.json`, which /eventos renders as a second
+section ("Ferias y reclutamiento") where every card carries the visible
+"Agregado automáticamente" badge and a "verify with the organizer" CTA. Trust
+hierarchy: the curated seed always wins dedupe (normalized title + start date,
+or same official-site host); scraped events never promote themselves into the
+seed — the owner curates by hand. Sources:
+
+| Source | Channel | Notes |
+| --- | --- | --- |
+| Big-4 official sites (EXPOMINA, PERUMIN, CONAMIN, proEXPLO) | Keyless HTTPS fetch (0 cost); `apify/cheerio-scraper` per-site fallback if bots are blocked | JSON-LD `Event` + Spanish date regex; **only a complete date is published**, the matched phrase goes to `notes`; Peru city per site is curated metadata |
+| Facebook — curated pages (SENATI, TECSUP, Antamina, Cerro Verde, Nexa, Buenaventura) | `apify~facebook-posts-scraper` (≈$5–8/1k posts; `startUrls` + `resultsLimit` + `onlyPostsNewerThan: 6 months`) | **posts, not Events** (FB Events channels removed 2026-09-11): only posts announcing a dated event enter; title = verbatim first line; date regex-extracted from the text, matched phrase goes to `notes` |
+| Facebook — keyword post search (`feria laboral minería`…) | `powerai~facebook-post-search-scraper` ($4.99/1k; `query` + `maxResults ≥ 10`) | same parser and Peru/niche/EVENT gates; FB heavily throttles post search — the actor "succeeds" with 0 items (empty runs bill $0, so the script retries once); groups are phase 2 (noise validation pending) |
+
+Guards: shared FB budget `CAP_FB=30` posts/run (page-posts ≈$5–8/1k + search
+$2.99/1k → ≈$0.25/mo at weekly cadence; on top of ≈$2.09/mo reserved by the job
+actors; official-site fetch is keyless and free). Only posts with a complete
+future event date enter; titles verbatim first lines (no translation); TTL
+prunes past events after a 14-day grace period; if every source fails the
+previous file is kept and CI goes red.
+
 ## 4. Personalization & i18n (removed — niche decision 2026-09-10)
 
 - **Spanish only, user fixed to Peru.** `es` lives at the root; the /en and /pt

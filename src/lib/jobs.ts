@@ -28,7 +28,13 @@ function tierSorted(list: Job[]): Job[] {
 }
 
 const parsed = JobFileSchema.parse(raw);
-export const jobs: Job[] = tierSorted(parsed.jobs);
+export const allJobs: Job[] = tierSorted(parsed.jobs);
+/** Pool general (/, /jobs): sin prácticas — viven solo en /practicas (Perú). */
+export const jobs: Job[] = allJobs.filter((j) => !(j.internship && j.country === 'PE'));
+/** Prácticas/trainee/becarios activos en Perú, postedAt desc. */
+export const internships: Job[] = allJobs
+  .filter((j) => j.internship === true && j.country === 'PE')
+  .sort((a, b) => b.postedAt.localeCompare(a.postedAt));
 export const generatedAt: string = parsed.generatedAt;
 
 export type JobIndexEntry = {
@@ -93,10 +99,11 @@ export function detectLang(s: string): 'es' | 'en' | 'pt' {
   return 'en';
 }
 
-/** Lightweight index embedded into pages for client-side hydration */
-export function jobIndex(locale: Locale = 'es'): JobIndexEntry[] {
+/** Lightweight index embedded into pages for client-side hydration.
+ *  `list` defaults to the general pool; /practicas passes `internships`. */
+export function jobIndex(locale: Locale = 'es', list: Job[] = jobs): JobIndexEntry[] {
   const t = useTranslations(locale);
-  return jobs.map((j) => ({
+  return list.map((j) => ({
     id: j.id,
     slug: j.slug,
     title: j.title,
@@ -117,7 +124,9 @@ export function jobIndex(locale: Locale = 'es'): JobIndexEntry[] {
 }
 
 export function getJob(slug: string): Job | undefined {
-  return jobs.find((j) => j.slug === slug);
+  // Busca en TODO el feed: las prácticas no están en `jobs` pero su
+  // detail page (/jobs/[slug]) debe seguir resolviendo.
+  return allJobs.find((j) => j.slug === slug);
 }
 
 export function byCountry(code: string): Job[] {

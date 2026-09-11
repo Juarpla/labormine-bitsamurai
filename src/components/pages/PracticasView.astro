@@ -1,0 +1,125 @@
+---
+import AdSlot from '../AdSlot.astro';
+import JobCard from '../JobCard.astro';
+import JobDrawer from '../JobDrawer.astro';
+import { localePath, useTranslations, type Locale } from '../../lib/i18n';
+import { internships, jobIndex } from '../../lib/jobs';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'es' } = Astro.props;
+const t = useTranslations(locale);
+
+const index = jobIndex(locale, internships);
+
+const payload = JSON.stringify({
+  index,
+  countMsg: t('practicas.count', { n: '{n}' }),
+});
+---
+
+<div class="xl:grid xl:grid-cols-[160px_56rem_160px] xl:justify-center xl:gap-4">
+  <AdSlot
+    slotId="practicas-side-1"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:col-start-1 xl:row-start-1 xl:block"
+  />
+  <section class="mx-auto max-w-4xl px-4 py-16 sm:px-6 xl:col-start-2 xl:row-start-1">
+    <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('practicas.title')}</h1>
+    <p class="mt-4 max-w-2xl text-graphite-400">{t('practicas.lead')}</p>
+
+    <AdSlot
+      slotId="practicas-top-1"
+      size={{ w: 320, h: 50 }}
+      media="(max-width: 1023.98px)"
+      locale={locale}
+      class="mx-auto w-fit lg:hidden"
+    />
+
+    <p class="mt-10 text-sm text-graphite-400">{t('practicas.count', { n: internships.length })}</p>
+
+    {
+      internships.length > 0 ? (
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          {internships.map((job) => (
+            <JobCard job={job} locale={locale} />
+          ))}
+        </div>
+      ) : (
+        <div class="mt-4">
+          <div class="flex flex-col items-center rounded-2xl border border-graphite-800 bg-graphite-900/40 px-6 py-14 text-center sm:py-16">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+              <circle cx="36" cy="34" r="22" stroke="#3A4356" stroke-width="2" />
+              <path d="M52 50 62 60" stroke="#3A4356" stroke-width="2" stroke-linecap="round" />
+              <path d="M26 39a10 10 0 0 1 20 0" stroke="#7A8598" stroke-width="2" stroke-linecap="round" />
+              <path d="M22 39h28" stroke="#7A8598" stroke-width="2" stroke-linecap="round" />
+              <circle cx="36" cy="33" r="2.5" fill="#F5A623" />
+            </svg>
+            <h2 class="mt-6 font-display text-2xl font-semibold text-graphite-100">{t('practicas.empty.title')}</h2>
+            <p class="mt-3 max-w-sm text-sm leading-relaxed text-graphite-400">{t('practicas.empty.body')}</p>
+            <a
+              href={localePath(locale, '/jobs')}
+              class="mt-6 rounded-full bg-brand-500 px-4 py-2 text-sm font-semibold text-graphite-950 transition-colors hover:bg-brand-400 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-950"
+            >
+              {t('practicas.empty.jobs')}
+            </a>
+            <a
+              href={localePath(locale, '/guias/trabajar-en-mina-sin-experiencia')}
+              class="mt-5 rounded-sm text-xs font-semibold text-brand-400 transition-colors hover:text-brand-300 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-950"
+            >
+              {t('practicas.guide')} →
+            </a>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      internships.length > 0 && (
+        <a
+          href={localePath(locale, '/guias/trabajar-en-mina-sin-experiencia')}
+          class="mt-8 inline-block rounded-sm text-sm font-semibold text-brand-400 transition-colors hover:text-brand-300 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-950"
+        >
+          {t('practicas.guide')} →
+        </a>
+      )
+    }
+  </section>
+
+  <AdSlot
+    slotId="practicas-side-2"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:col-start-3 xl:row-start-1 xl:block"
+  />
+</div>
+
+<div class="pb-4">
+  <AdSlot
+    slotId="practicas-bottom-desktop-1"
+    size={{ w: 970, h: 90 }}
+    media="(min-width: 1024px)"
+    locale={locale}
+    class="mx-auto w-fit hidden lg:block"
+  />
+  <AdSlot
+    slotId="practicas-bottom-mobile-1"
+    size={{ w: 320, h: 100 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+</div>
+
+<JobDrawer locale={locale} />
+
+<script type="application/json" id="lm-jobs-data" set:html={payload} />
+
+<script>
+  const data = JSON.parse(document.getElementById('lm-jobs-data')!.textContent!);
+  (window as any).__lmIndex = data.index;
+</script>

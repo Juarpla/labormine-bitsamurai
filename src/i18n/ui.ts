@@ -9,10 +9,10 @@ export const locales: Locale[] = ['es'];
 const en = {
   'nav.home': 'Home',
   'nav.jobs': 'Jobs',
+  'nav.practicas': 'Internships',
   'nav.pathways': 'Visa pathways',
   'nav.eventos': 'Events',
   'nav.guias': 'Guides',
-  'nav.about': 'About',
   'nav.contact': 'Contact',
 
   'hero.kicker': 'Mining jobs for Peruvians',
@@ -159,6 +159,16 @@ const en = {
   'jobs.count': '{n} jobs',
   'jobs.found': 'Found',
 
+  'practicas.title': 'Mining internships',
+  'practicas.lead':
+    'Internships, trainee programs and entry grants posted by Peruvian mining companies and job platforms. Every listing links to the original source — you apply directly, no middlemen.',
+  'practicas.count': '{n} active internships',
+  'practicas.empty.title': 'No active internships today',
+  'practicas.empty.body':
+    'No company in the feed has an internship open right now. The feed refreshes daily — check back soon or browse the full job board.',
+  'practicas.empty.jobs': 'Browse all jobs',
+  'practicas.guide': 'No experience? Start with the guide: working on a mine site with no experience',
+
   'pathways.title': 'Visa pathways',
   'pathways.lead':
     'Official visa routes for Peruvians to work abroad legally. Sourced from government pages — always verify before applying.',
@@ -188,10 +198,21 @@ const en = {
   'events.type.expo': 'Expo',
   'events.type.conferencia': 'Conference',
   'events.type.webinar': 'Webinar',
+  'events.type.otro': 'Other',
   'events.city': 'City',
   'events.updated': 'List verified {date}',
   'events.empty': 'No events published yet — check back soon.',
   'events.official': 'Official source',
+  'events.scraped.title': 'Job fairs & recruiting',
+  'events.scraped.lead':
+    'Events detected automatically from the official websites of organizers and from Facebook. Always verify with the organizer before attending or applying.',
+  'events.scraped.badge': 'Auto-added',
+  'events.scraped.cta': 'Verify with the organizer',
+  'events.scraped.source.web-oficial': 'Official website',
+  'events.scraped.source.facebook-post': 'Facebook post',
+  'events.scraped.detected': 'Detected {date}',
+  'events.scraped.organizer': 'Organized by: {name}',
+  'events.scraped.empty': 'No events detected yet — the weekly tracker keeps looking.',
 
   'faq.teaser': 'Straight answers about salaries, medical requirements and first jobs in mining.',
 
@@ -238,10 +259,10 @@ export type Dictionary = typeof en;
 const es: Dictionary = {
   'nav.home': 'Inicio',
   'nav.jobs': 'Empleos',
+  'nav.practicas': 'Prácticas',
   'nav.pathways': 'Rutas de visa',
   'nav.eventos': 'Eventos',
   'nav.guias': 'Guías',
-  'nav.about': 'Acerca de',
   'nav.contact': 'Contacto',
 
   'hero.kicker': 'Empleos mineros para peruanos',
@@ -389,6 +410,16 @@ const es: Dictionary = {
   'jobs.count': '{n} empleos',
   'jobs.found': 'Encontrados',
 
+  'practicas.title': 'Prácticas en minería',
+  'practicas.lead':
+    'Prácticas preprofesionales y profesionales, trainee y puestos de becario publicados por empresas y plataformas del sector minero peruano. Cada puesto enlaza a la fuente original: postulas directo, sin intermediarios.',
+  'practicas.count': '{n} prácticas activas',
+  'practicas.empty.title': 'Sin prácticas activas hoy',
+  'practicas.empty.body':
+    'Ahora mismo ninguna empresa del feed tiene una práctica publicada. El feed se actualiza a diario: vuelve pronto o explora el tablero completo de empleos.',
+  'practicas.empty.jobs': 'Explorar todos los empleos',
+  'practicas.guide': '¿Sin experiencia? Empieza por la guía: trabajar en mina sin experiencia',
+
   'pathways.title': 'Rutas de visa',
   'pathways.lead':
     'Rutas oficiales para que peruanos trabajen legalmente en el extranjero. Fuente: páginas oficiales de gobierno — verifica siempre antes de postular.',
@@ -418,10 +449,21 @@ const es: Dictionary = {
   'events.type.expo': 'Expo',
   'events.type.conferencia': 'Conferencia',
   'events.type.webinar': 'Webinar',
+  'events.type.otro': 'Otro',
   'events.city': 'Ciudad',
   'events.updated': 'Lista revisada {date}',
   'events.empty': 'No hay eventos publicados todavía — revisa pronto.',
   'events.official': 'Fuente oficial',
+  'events.scraped.title': 'Ferias y reclutamiento',
+  'events.scraped.lead':
+    'Eventos detectados automáticamente en las webs oficiales de los organizadores y en Facebook. Verifica siempre con el organizador antes de asistir o postular.',
+  'events.scraped.badge': 'Agregado automáticamente',
+  'events.scraped.cta': 'Verificar con el organizador',
+  'events.scraped.source.web-oficial': 'Web oficial',
+  'events.scraped.source.facebook-post': 'Publicación de Facebook',
+  'events.scraped.detected': 'Detectado {date}',
+  'events.scraped.organizer': 'Organiza: {name}',
+  'events.scraped.empty': 'Sin eventos detectados por ahora — el rastreo semanal sigue activo.',
 
   'faq.teaser': 'Respuestas directas sobre salarios, requisitos médicos y cómo entrar a mina sin experiencia.',
 
@@ -466,10 +508,10 @@ const es: Dictionary = {
 const pt: Dictionary = {
   'nav.home': 'Início',
   'nav.jobs': 'Vagas',
+  'nav.practicas': 'Estágios',
   'nav.pathways': 'Rotas de visto',
   'nav.eventos': 'Eventos',
   'nav.guias': 'Guias',
-  'nav.about': 'Sobre',
   'nav.contact': 'Contato',
 
   'hero.kicker': 'Vagas de mineração para peruanos',
@@ -617,6 +659,16 @@ const pt: Dictionary = {
   'jobs.count': '{n} vagas',
   'jobs.found': 'Encontradas',
 
+  'practicas.title': 'Estágios em mineração',
+  'practicas.lead':
+    'Estágios, programas de trainee e vagas para aprendizes publicados por empresas e plataformas do setor de mineração peruano. Cada vaga aponta para a fonte original: você se candidata direto, sem intermediários.',
+  'practicas.count': '{n} estágios ativos',
+  'practicas.empty.title': 'Sem estágios ativos hoje',
+  'practicas.empty.body':
+    'Nenhuma empresa do feed tem um estágio aberto agora. O feed é atualizado diariamente — volte em breve ou explore o painel completo de vagas.',
+  'practicas.empty.jobs': 'Explorar todas as vagas',
+  'practicas.guide': 'Sem experiência? Comece pelo guia: trabalhar em mina sem experiência',
+
   'pathways.title': 'Rotas de visto',
   'pathways.lead':
     'Rotas oficiais para peruanos trabalharem legalmente no exterior. Fonte: páginas oficiais de governo — sempre verifique antes de se candidatar.',
@@ -646,10 +698,21 @@ const pt: Dictionary = {
   'events.type.expo': 'Expo',
   'events.type.conferencia': 'Conferência',
   'events.type.webinar': 'Webinar',
+  'events.type.otro': 'Outro',
   'events.city': 'Cidade',
   'events.updated': 'Lista verificada em {date}',
   'events.empty': 'Nenhum evento publicado ainda — volte em breve.',
   'events.official': 'Fonte oficial',
+  'events.scraped.title': 'Feiras e recrutamento',
+  'events.scraped.lead':
+    'Eventos detectados automaticamente nos sites oficiais dos organizadores e no Facebook. Verifique sempre com o organizador antes de participar ou candidatar.',
+  'events.scraped.badge': 'Adicionado automaticamente',
+  'events.scraped.cta': 'Verificar com o organizador',
+  'events.scraped.source.web-oficial': 'Site oficial',
+  'events.scraped.source.facebook-post': 'Publicação no Facebook',
+  'events.scraped.detected': 'Detectado {date}',
+  'events.scraped.organizer': 'Organizado por: {name}',
+  'events.scraped.empty': 'Nenhum evento detectado por enquanto — o rastreamento semanal continua.',
 
   'faq.teaser': 'Respostas diretas sobre salários, requisitos médicos e primeiros empregos em mineração.',
 

@@ -464,6 +464,71 @@ gráficos, sin API key: `https://query1.finance.yahoo.com/v8/finance/chart/{TICK
 
 ---
 
+## 8. Eventos de reclutamiento — webs oficiales de las ferias grandes + Facebook (Apify)
+
+**Sección:** /eventos → "Ferias y reclutamiento" (`src/data/events-scraped.json`,
+escrito por `scripts/ingest-events.mjs`; cron semanal domingo en
+`refresh-events.yml`). Framing visible: badge "Agregado automáticamente" + CTA
+"verificar con el organizador"; el seed curado (`events.json`) siempre gana el
+dedup. Nada se publica sin fecha completa y futura; títulos verbatim, sin
+traducción.
+
+### 1. Webs oficiales de las ferias grandes (keyless, 0 costo) — VERIFICADAS
+
+| Feria | URL oficial | Estado verificado 2026-09-11 |
+| --- | --- | --- |
+| EXPOMINA PERÚ | https://expominaperu.com/ | 2026 (9–11 set) — en el seed curado |
+| PERUMIN | https://www.perumin.com/ | PERUMIN 38 set 2027 — en el seed curado |
+| CONAMIN | https://conamin.ciplima.org.pe/ | XVI: 15–19 jun 2026, TECSUP Trujillo (ya pasada); XVII sin anunciar. Confirmada por Resolución Viceministerial N° 0125-2025-MINEM/VMM |
+| proEXPLO | https://proexplo.com.pe/es | XV: 4–6 may 2026, Lima (ya pasada); proEXPLO 2028 con comité designado, fecha sin anunciar. Oficializada por Resolución de Secretaría General N° 0173-2026-RE |
+
+Método: JSON-LD `schema.org/Event` + regex de fechas en español ("del 15 al 19
+de junio de 2026") sobre el texto visible. Solo entra una fecha completa
+(YYYY-MM-DD); la frase hallada va a `notes`. Fallback por sitio si bloquea
+bots: `apify/cheerio-scraper`. El watcher detecta la próxima edición de
+CONAMIN/proEXPLO en cuanto el organizador la publique.
+
+### 2. Facebook publicaciones (no Eventos) vía Apify — VERIFICADO 2026-09-11
+
+Decisión 2026-09-11: los canales de FB Events (scrapesage páginas-eventos +
+keyword-eventos en 2 etapas) se retiraron — las convocatorias peruanas viven
+casi siempre como **publicaciones** de páginas/grupos, no como Eventos FB.
+Solo entra un post que **anuncia un evento fechado**: primera fecha completa
+futura del texto vía regex (determinista, sin LLM); la frase de la fecha va
+verbatim a `notes`; el título del evento es la primera línea del texto
+verbatim (los posts no tienen título; truncada a 200 chars). La fecha de la
+publicación NO es la fecha del evento — nunca se confunden.
+
+- **Posts de páginas curadas** (`apify~facebook-posts-scraper`): input
+  verificado — `startUrls` (lista), `resultsLimit` (cap), `onlyPostsNewerThan`
+  ('6 months' acota el escaneo); salida `text`/`url`/`postId`/`pageName`/
+  `time`/`timestamp`. Precio ≈ $5–8/1k posts. Sin login. Seed: SENATI,
+  TECSUP, Antamina, Cerro Verde, Nexa, Buenaventura (slugs verificados por
+  HTTP 200 el 2026-09-11); extender en `FB_PAGES_SEED`.
+- **Búsqueda de posts por keyword** (`powerai~facebook-post-search-scraper`):
+  input verificado — `query` + `maxResults` (mínimo 10). $4.99/1k, pure
+  pay-per-result. 210k corridas. **Prueba en vivo 2026-09-11**: devuelve
+  resultados reales de Perú ("CONVOCATORIA MINERA – YAULI, JUNÍN",
+  "CONVOCATORIA MINERA EVS, UM Millotingo") — pero FB raciona la búsqueda y
+  el actor "termina OK" con 0 items de forma intermitente (corridas vacías
+  facturan $0, así que el script reintenta una vez). Queries: `feria laboral
+  minería`, `convocatoria minera`, `feria de empleo minera`; exige señal
+  minera/laboral, señal de EVENTO (feria|charla|jornada|congreso|… — los
+  posts de puro job-call NO entran, decisión 2026-09-11) y señal Perú
+  (virtual permitido). La búsqueda puede devolver posts de grupos públicos;
+  el gate decide qué entra. Grupos específicos ("Bolsa de trabajo minería
+  Perú"…): fase 2 con validación de ruido propia.
+- Ambos canales comparten el cap 30/corrida (páginas primero, búsqueda llena
+  el resto); dedupe intra-FB por postId/URL. Presupuesto posts ≈ $0.25/mo a
+  cadencia semanal → total global < $2.4/mo dentro del plan free ($5). Formato
+  de actor en la API: `username~actor-name` (¡tilde, no slash!).
+
+`lastVerifiedAt: 2026-09-11` (4 webs oficiales verificadas; resoluciones
+oficiales citadas; estado del login-wall de Facebook documentado por los
+actores el 2026-08).
+
+---
+
 ## Resumen rápido
 
 | Fuente | Método | Consumo automático | Frecuencia | Indicador Labormin |

@@ -2543,6 +2543,35 @@ function inNiche(j) {
   return false;
 }
 
+/* -------------------- prácticas / trainee (2026-09-11) --------------------- */
+
+const normEs = (s) => (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+/** Detección heurística de prácticas (owner decisions 2026-09-11): practicante,
+ *  práctica (pre)profesional, trainee, becario (también "intern" en puestos PE
+ *  publicados en inglés). Descripción: solo patrones estrictos — un puesto
+ *  senior que menciona "prácticas" de pasada no cuenta. "beca" sola NO cuenta
+ *  (scholarship ≠ puesto). Igual que visaReported: heurística, nunca editada. */
+const INTERNSHIP_TITLE_RE =
+  /\b(?:practicante|practicas?\s+(?:pre\s?pro)?fesionales?|trainee|becari[oa]|intern(?:ship)?)\b/;
+const INTERNSHIP_DESC_RE =
+  /\b(?:practicas?\s+(?:pre\s?pro)?fesionales?|convenio\s+(?:universitario|de\s+practicas))\b/;
+
+function isInternship(j) {
+  if (INTERNSHIP_TITLE_RE.test(normEs(j.title))) return true;
+  const text = stripTags(decodeEntities(j.description || '')).slice(0, 2000);
+  return INTERNSHIP_DESC_RE.test(normEs(text));
+}
+
+/** Estampa (o limpia) el flag en todo el feed — self-healing: cada corrida
+ *  re-detecta desde título+descripción, sin depender del estado previo. */
+function stampInternships(jobs) {
+  for (const j of jobs) {
+    if (isInternship(j)) j.internship = true;
+    else delete j.internship;
+  }
+}
+
 /** Offline prune of the existing feed — applies the niche rules + TTL without
  *  re-fetching any source (keeps Apify/Adzuna rows captured with CI secrets).
  *  Run: node scripts/ingest.mjs --prune */
@@ -2555,6 +2584,7 @@ async function prune() {
     return Number.isFinite(t) && t >= cutoff && t <= Date.now() + 86400000 && inNiche(j);
   });
   niche.sort((a, b) => b.postedAt.localeCompare(a.postedAt));
+  stampInternships(niche);
   await writeFile(
     OUT,
     JSON.stringify({ generatedAt: new Date().toISOString(), jobs: niche }, null, 2)
@@ -2735,6 +2765,9 @@ async function main() {
     if (!seen.has(key)) seen.set(key, j);
   }
   const jobs = [...seen.values()].sort((a, b) => b.postedAt.localeCompare(a.postedAt));
+
+  // Marca de prácticas/trainee/becario → /practicas (display-only split).
+  stampInternships(jobs);
 
   // Auto-translated titles (es/en/pt) — descriptions are never translated.
   await translateTitles(jobs);

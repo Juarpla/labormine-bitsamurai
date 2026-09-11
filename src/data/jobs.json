@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-10T16:13:20.589Z",
+  "generatedAt": "2026-09-11T17:59:52.532Z",
   "jobs": [
     {
       "id": "az-AU-5877181557",
@@ -3298,7 +3298,8 @@
       "translations": {
         "es": "Ingeniero de Obras Civiles/Terraplenado, Pasante",
         "pt": "Engenheiro Civil/Earthworks, Estagiário"
-      }
+      },
+      "internship": true
     },
     {
       "id": "indeed-w-indeed-com-viewjob-jk-70c6ace1e2021219",
@@ -4565,7 +4566,8 @@
       "translations": {
         "es": "PRACTICANTE DE INFRAESTRUCTURA",
         "pt": "PRACTICANTE DE INFRAESTRUCTURA"
-      }
+      },
+      "internship": true
     },
     {
       "id": "csb-fortescue-1365424666",
@@ -4731,7 +4733,8 @@
       "translations": {
         "en": "GEOLOGY PROFESSIONAL INTERNSHIP",
         "pt": "PRACTICANTE PROFESIONAL DE GEOLOGÍA"
-      }
+      },
+      "internship": true
     },
     {
       "id": "sr-744000147567678",
@@ -5145,7 +5148,8 @@
       "translations": {
         "es": "PRACTICANTE DE RELACIONES LABORALES",
         "pt": "PRACTICANTE DE RELACIONES LABORALES"
-      }
+      },
+      "internship": true
     },
     {
       "id": "csb-minsur-1336260262",
@@ -5168,7 +5172,8 @@
       "translations": {
         "es": "PRACTICANTE DE COMUNICACIONES EXTERNAS",
         "pt": "PRACTICANTE DE COMUNICACIONES EXTERNAS"
-      }
+      },
+      "internship": true
     },
     {
       "id": "csb-fortescue-1366853866",
@@ -6617,7 +6622,8 @@
       "translations": {
         "es": "Trainee de Servicio",
         "pt": "Estagiário de Serviço"
-      }
+      },
+      "internship": true
     },
     {
       "id": "indeed-w-indeed-com-viewjob-jk-41233631346e41bc",
@@ -6916,7 +6922,8 @@
       "translations": {
         "es": "PRACTICANTE DE FINANZAS",
         "pt": "PRACTICANTE DE FINANZAS"
-      }
+      },
+      "internship": true
     },
     {
       "id": "csb-minsur-1336185362",
@@ -7059,7 +7066,8 @@
       "translations": {
         "es": "Practicante Profesional RRHH en Mina Huaral 14x7",
         "pt": "Practicante Profesional RRHH en Mina Huaral 14x7"
-      }
+      },
+      "internship": true
     },
     {
       "id": "ct-1446EB28E046E6DE61373E686DCF3405",
@@ -7248,7 +7256,8 @@
       "translations": {
         "es": "Practicante Profesional de RRHH - Mina Huaral 14x7",
         "pt": "Practicante Profesional de RRHH - Mina Huaral 14x7"
-      }
+      },
+      "internship": true
     },
     {
       "id": "nv-BMPE-1118423378",
@@ -7409,7 +7418,8 @@
       "translations": {
         "en": "Logistics Intern",
         "pt": "Estagiário de Logística"
-      }
+      },
+      "internship": true
     },
     {
       "id": "csb-fortescue-1363805966",
@@ -7506,7 +7516,8 @@
       "translations": {
         "es": "PRACTICANTE DE BIENESTAR SOCIAL",
         "pt": "PRACTICANTE DE BIENESTAR SOCIAL"
-      }
+      },
+      "internship": true
     },
     {
       "id": "indeed-w-indeed-com-viewjob-jk-65cf2d30c0447ba2",
@@ -7690,7 +7701,8 @@
       "translations": {
         "es": "Practicante de recursos humanos",
         "pt": "Estagiário de Recursos Humanos"
-      }
+      },
+      "internship": true
     },
     {
       "id": "ct-5D72DCF7F21AFC8861373E686DCF3405",
@@ -8155,7 +8167,8 @@
       "translations": {
         "en": "Electronic Shot Programmer Trainee UG",
         "pt": "Trainee Programador de Disparos Electrónicos UG"
-      }
+      },
+      "internship": true
     },
     {
       "id": "indeed-w-indeed-com-viewjob-jk-c574f15f0edecad8",
@@ -8791,7 +8804,8 @@
       "translations": {
         "es": "Trainee de Mina / Unidad Minera / Arequipa",
         "pt": "Trainee de Mina / Unidad Minera / Arequipa"
-      }
+      },
+      "internship": true
     },
     {
       "id": "nv-BMPE-1118409149",
@@ -8888,7 +8902,8 @@
       "translations": {
         "es": "Practicante Profesional de Mantenimiento - Unidad Minera - Arequipa",
         "pt": "Practicante Profesional de Mantenimiento - Unidad Minera - Arequipa"
-      }
+      },
+      "internship": true
     },
     {
       "id": "nv-BMPE-1118403743",
@@ -8934,7 +8949,8 @@
       "translations": {
         "es": "PRACTICANTE DE TALENTO Y CULTURA",
         "pt": "PRACTICANTE DE TALENTO Y CULTURA"
-      }
+      },
+      "internship": true
     },
     {
       "id": "nv-BMPE-1118403255",
@@ -8980,7 +8996,8 @@
       "translations": {
         "en": "Geology Intern - Mining Unit - Arequipa",
         "pt": "Practicante Pro de Geología - Unidad Minera - Arequipa"
-      }
+      },
+      "internship": true
     },
     {
       "id": "nv-BMPE-1118402423",
@@ -9054,57 +9071,6 @@
       "translations": {
         "es": "Jefe de Exploraciones Mina",
         "pt": "Chefe de Explorações Mina"
-      }
-    },
-    {
-      "id": "csb-fortescue-1365700966",
-      "slug": "fortescue-kidlington-technical-specialist-embedded-application-engineering-oxf-g",
-      "title": "Technical Specialist - Embedded Application Engineering",
-      "company": "Fortescue",
-      "companySlug": "fortescue",
-      "source": "sapsf-csb",
-      "country": "PE",
-      "city": "Kidlington",
-      "locationRaw": "Kidlington, OXF",
-      "remote": false,
-      "visaReported": false,
-      "category": "engineering",
-      "salary": null,
-      "postedAt": "2026-08-12",
-      "url": "https://careers-apply.fortescue.com/job/Kidlington-Technical-Specialist-Embedded-Application-Engineering-OXF/1365700966/",
-      "description": "<p>Our Opportunity</p><p>Location: Kidlington, Oxford, Unit 5 Technology Dr,</p><p>Roster: Monday to Friday </p><p>Role Purpose:</p><p>The Technical Specialist in Application Engineering team will lead the integration and validation of the Elysia Embedded product.</p><p>Collaborate with internal and external stakeholders to deliver high performance battery state estimation and control, and diagnostics and prognostics algorithms aimed at maximizing the performance, safety and life of battery systems.</p><p>Key Responsibilities</p><p>•    Leads customer requirements gathering and elicitation into software requirements. <br/>•    Lead collaboration with cross-functional teams, including software developers, product and project managers, to ensure seamless integration of Elysia Embedded algorithms into customer’s BMS application software.<br/>•    Lead the evaluation of Elysia Embedded algorithms in customer’s controlled and live operating environments (e.g., Virtual, Cell-In-The-Loop, HIL, EOL, vehicle testing).<br/>•    Support hardware benchmarking of Elysia Embedded algorithms.<br/>•    Lead pilot projects, proof of concepts, technical workshops and presentations to demonstrate the capabilities and benefits of Elysia Embedded to potential and existing customers.<br/>•    Fulfil the role of a Lead Application Engineer in Delivery Squads, being responsible for the technical leading of projects delivered to customers.<br/>•    Write and maintain customer facing documentation, maintain fluency of Elysia Embedded Products for communicating capabilities to customers.<br/>•    Defines software quality and compliance with relevant certifications (e.g., MAAB, ASPICE).<br/>•    Owns technical specialist delivery in multiple domains, such as requirements elicitation, system architecting, customer calibration &amp; validation, and/or software delivery.</p><p>Qualifications and Experience</p><p>Details of the experience needed to be successful in the role, the qualifications essential/desirable to be able to fulfil the role and any specific behavioral traits.</p><p>Essential:</p><p>•    Experience in customer-facing roles, providing technical support and translating customer requirements into technical solutions.</p><p>•    Bachelor’s or master’s degree with a minimum 2:1 (or equivalent) in a relevant STEM subject (e.g., Mathematics, Physics, Statistics, Computing, Mechanical Engineering, Electrical Engineering, etc.).</p><p>•    Expertise in code generation using MATLAB/Simulink.</p><p>•    Experience with version control and CI/CD frameworks (e.g., Github, Gitlab, Azure DevOps).</p><p>•    Excellent communication skills and the ability to prioritize tasks and maintain a high-level view of project goals.</p><p>•    Strong problem-solving skills and the ability to think critically and analytically.</p><p>•    To have a ‘can do’ proactive attitude day in day out and proactively support and collaborate with others.</p><p>•    They will be able to take on innovative ideas, concepts, and ways of working to meet strict project deadlines.</p><p>•    Willingness to proactively build new relationships &amp; connections across the business in support of team &amp; company goals.</p><p>Beneficial:</p><p>•    Experience with Requirements Elicitation methods.</p><p>•    Experience in embedded state estimation algorithm development.</p><p>•    Experience in electro-thermal modelling of battery systems. </p><p>•    Experience in ASPICE processes.</p><p>•    Experience in electrical testing of battery cells, including development of test plans.</p><p>•    Experience with embedded systems and hardware</p><p>This job description is not exhaustive, and the job holder will be required to carry out from time-to-time tasks in addition to the above that will be both reasonable and within their capabilities.</p><p>About Us</p><p>At Elysia, we are at the forefront of revolutionizing the life, safety, and performance of battery systems, across markets and industries. </p><p>As a pioneering technology company, we specialize in the development of cutting-edge software solutions that supports, optimises and de-risks the deployment of batteries, from cradle to grave, starting with design and manufacture, through to first-life monitoring and the transition to second-life or recycling.</p><p>Our team of brilliant minds and passionate experts are dedicated to pushing the boundaries in software-derived performance, both within embedded BMS and cloud-based domains. We believe in the combination of expertise in electrochemistry, battery systems and data science to build products that empower our customers to unlock the full potential of their battery assets.</p><p>Elysia is wholly owned business of Fortescue, a top 10 ASX listed company. Fortescue is a world leading mining and energy company, who has committed to reach net zero by 2030. As one of its flagship customers, Elysia is working closely with Fortescue to assist with the decarbonisation of their operations.</p><p>Our Commitment</p><p>Fortescue celebrates individual strengths and team members are encouraged to bring their whole selves to work. Our global workforce drives and promotes an inclusive culture, both within our organisation and throughout the communities we interact with. Diverse backgrounds include First Nations Peoples, people with disabilities, LGBTQ+ community, gender, neurodiverse, cultural diversity, all age groups, and those with an intersectional or multiple diverse characteristics. <br/>We encourage candidates from all backgrounds to apply.</p><p>https://fortescue.com/careers</p><p>Internal Candidates / Current Contractors please apply via Success Factors Careers Portal. For further information on how to apply please visit the Fortescue Hub. </p><p>Fortescue reserves the right to close applications early should a suitable pool of candidates be identified. Fortescue will never contact you to ask for payment of any kind, whether directly or through a third party.</p><p>Apply now »</p><p>Find similar jobs: </p><p>Contact Us</p><p>View All Jobs</p><p>Join Talent Community</p><p>Privacy Policy</p><p>Terms of Use</p><p>Opens in a new tab.</p><p>Opens in a new tab.</p><p>Opens in a new tab.</p><p>Opens in a new tab.</p><p>© Copyright 2023 Fortescue. All ri</p>",
-      "excerpt": "Our Opportunity Location: Kidlington, Oxford, Unit 5 Technology Dr, Roster: Monday to Friday Role Purpose: The Technical Specialist in Application Engineering team will lead the integration and validation of the Elysia Embedded product. Collaborate with internal and external stak…",
-      "translations": {
-        "es": "Especialista Técnico - Ingeniería de Aplicaciones Embebidas",
-        "pt": "Especialista Técnico - Engenharia de Aplicações Embarcadas"
-      }
-    },
-    {
-      "id": "ct-582508C4D4CA9DDB61373E686DCF3405",
-      "slug": "rh-talent-consultora-e-i-r-l-asesor-a-comercial-de-martillos-hidraulicos-lima-ma",
-      "title": "Asesor(a) Comercial de Martillos Hidráulicos/Lima/ Materiales de Construcción - Presencial",
-      "company": "RH TALENT CONSULTORA E.I.R.L.",
-      "companySlug": "rh-talent-consultora-e-i-r-l",
-      "source": "computrabajo",
-      "country": "PE",
-      "city": "Lima",
-      "locationRaw": "Lima, San Juan De Lurigancho",
-      "remote": false,
-      "visaReported": false,
-      "category": "other",
-      "salary": {
-        "min": 1130,
-        "max": null,
-        "currency": "PEN",
-        "period": "month"
-      },
-      "postedAt": "2026-08-12",
-      "url": "https://pe.computrabajo.com/ofertas-de-trabajo/oferta-de-trabajo-de-asesora-comercial-de-martillos-hidraulicoslima-materiales-de-construccion-presencial-en-san-juan-de-lurigancho-582508C4D4CA9DDB61373E686DCF3405",
-      "description": "<p>Beneficios:<br/>- Planilla desde el día uno ( Régimen laboral Pyme)<br/>- Sueldo fijo S/1130 + comisiones por ventas cerradas (En $ dólares). Pudiendo ganar con las comisiones aproximadamente 3500 S/.<br/>- oportunidades de desarrollo profesional.<br/>- Movilidad o viáticos cubiertos para visitas comerciales.<br/>- Horario: Lunes a viernes: 8:30 a. m. a 5:30 p. m. | Sábado: 8:30 a. m. a 12:30 p. m.<br/>· Funciones:<br/>- Prospectar y desarrollar una cartera propia de clientes, enfocado principalmente en empresas y contratistas de minería subterránea.<br/>- Gestionar y dar seguimiento a clientes potenciales generados a través de bases de datos, redes sociales, correo electrónico y otros canales de captación.<br/>- Planificar y ejecutar visitas comerciales frecuentes en Lima y viajes a zonas mineras para fortalecer la relación con clientes y concretar oportunidades de negocio.<br/>- Diagnosticar las necesidades de los clientes y presentar las soluciones o repuestos adecuados, resaltando sus especificaciones técnicas, aplicaciones y calidad.<br/>- Posicionar el valor diferencial del portafolio, destacando el origen europeo de la mayoría de los repuestos y la procedencia coreana de las puntas.<br/>- Registrar, actualizar y monitorear la gestión de prospectos, reuniones y oportunidades de venta a través del CRM.<br/>- Recopilar y sistematizar información comercial relevante mediante hojas de cálculo para el análisis básico de datos y reportes visuales.<br/>- Elaborar presentaciones comerciales en PowerPoint para dar soporte a las reuniones estratégicas con clientes.<br/>Requisitos:<br/>- Universitario o técnico, incluyendo estudios truncos en carreras afines a administración o ingeniería industrial.<br/>- Experiencia mínima de 3 a 6 meses, no necesariamente en el rubro.<br/>- Deseable técnica de ventas.<br/>- Manejo de Microsoft Word, nivel básico, manejo de CRM para seguimiento comercial.-Requerimientos- Educación mínima: Universitario<br/> años de experiencia<br/>Edad: entre 20 y 30 años<br/>Conocimientos: Autoconfianza<br/>Palabras clave: salesman, saleswoman, seller, vendedor, comercial, salesperson, componentes, materials, components, materiales, construction, obra, edificar, edificacion</p>",
-      "excerpt": "Beneficios: - Planilla desde el día uno ( Régimen laboral Pyme) - Sueldo fijo S/1130 + comisiones por ventas cerradas (En $ dólares). Pudiendo ganar con las comisiones aproximadamente 3500 S/. - oportunidades de desarrollo profesional. - Movilidad o viáticos cubiertos para visita…",
-      "translations": {
-        "en": "Commercial Advisor for Hydraulic Hammers/Lima/ Construction Materials - On-site",
-        "pt": "Asesor(a) Comercial de Martillos Hidráulicos/Lima/ Materiales de Construcción - Presencial"
       }
     }
   ]

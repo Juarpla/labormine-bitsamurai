@@ -33,6 +33,7 @@ pnpm visual       # capture UI screenshots across chromium/webkit at
                   # mobile/tablet/desktop viewports into screenshots/
 node scripts/ingest.mjs         # refresh src/data/jobs.json from live sources
 node scripts/ingest.mjs --prune # offline: re-apply niche rules + TTL to the stored feed
+node scripts/ingest-events.mjs  # refresh src/data/events-scraped.json (official sites keyless; FB via Apify; weekly CI)
 ```
 
 ### Verification
@@ -59,7 +60,16 @@ already running on localhost:4321-4326; otherwise it starts (and stops) its own.
    entries must cite a verifiable `officialUrl` and carry a real `lastVerifiedAt`
    date. Re-verify before editing; if a source doesn't confirm an event/pathway,
    it doesn't enter the seed. Events: presencial = Peru only; virtual = Peru or
-   the four power countries.
+   the four power countries. **Automated scraped events live apart**
+   (`src/data/events-scraped.json`, written weekly by CI via
+   `scripts/ingest-events.mjs`): they always render the visible
+   "Agregado automáticamente" badge with a "verify with the organizer" CTA,
+   never enter the curated seed, and the curated seed always wins dedupe
+   (normalized title + date, or same official-site host). Facebook contributes
+   only **posts that announce a dated event** (`source: 'facebook-post'`,
+   page posts + keyword post search — FB Events channels were removed
+   2026-09-11); the post title is the verbatim first line of the text and the
+   date is regex-extracted (never LLM).
 5. **AI description views are view-layer only.** Job *titles* may be
    auto-translated to **`es` only** at ingest via the multi-provider LLM chain in
    `src/lib/llm.js` (Mistral → Workers AI → OpenCode Go, ordered by
@@ -92,19 +102,22 @@ already running on localhost:4321-4326; otherwise it starts (and stops) its own.
 ```
 scripts/ingest.mjs            job ingestion (write jobs.json; +title translations; --prune niche filter)
 scripts/ingest-stocks.mjs     stock quotes ingestion (write stocks.json; Yahoo Finance + FX → USD; monthly CI)
+scripts/ingest-events.mjs     scraped-event ingestion (write events-scraped.json; official sites + Facebook via Apify; weekly CI)
 src/data/companies.json       curated public boards (extend here to add companies — niche: PE/CL/CA/US/AU)
 src/data/pathways.json        curated visa pathways seed (Peru-eligible focus)
 src/data/events.json          hand-curated mining events seed (officialUrl + lastVerifiedAt required)
+src/data/events-scraped.json  auto-detected events (badge "Agregado automáticamente"; curated seed wins dedupe)
 src/data/jobs.json            generated feed (commit; refreshed daily by CI; niche-filtered)
 src/data/translation-cache.json  auto-translated titles cache (commit)
-src/schemas.ts                Zod schemas for Job / Pathway / Event / feeds
+src/schemas.ts                Zod schemas for Job / Pathway / Event / ScrapedEvent / feeds
 src/lib/jobs.ts               build-time data helpers (tierOf, tier ranking)
 src/lib/events.ts             build-time event helpers (upcoming)
+src/lib/events-scraped.ts     build-time scraped-event helpers (upcoming + dedupe vs curated seed)
 src/lib/llm.js               multi-provider LLM chain (titles + clear view)
 src/lib/i18n.ts               localePath, niche countries, DEFAULT_COUNTRY/DEFAULT_NATIONALITY
 src/i18n/ui.ts                UI dictionary (es active; en/pt dormant)
-src/components/pages/*.astro  page views (HomeView, JobsView, JobDetailView, PathwaysView, EventsView, BolsaView)
-src/pages/                    routes: /, /jobs, /bolsa, /visa-pathways, /eventos, /guias(+2 guías), /faq,
+src/components/pages/*.astro  page views (HomeView, JobsView, JobDetailView, PathwaysView, EventsView, BolsaView, PracticasView)
+src/pages/                    routes: /, /jobs, /bolsa, /practicas, /visa-pathways, /eventos, /guias(+2 guías), /faq,
                               /about, /contact, /privacy, /terms, /ops, /api/translate-description
 docs/ADSENSE-CHECKLIST.md     AdSense admission checklist (owner + code states)
 PRODUCT.md                    durable product truth (impeccable init)
@@ -132,8 +145,10 @@ PRODUCT.md                    durable product truth (impeccable init)
   guías (shared by index + detail pages): `guias-top-1`, `guias-side-1/2`,
   `guias-bottom-desktop-1`, `guias-bottom-mobile-1`; bolsa: `bolsa-top-1`,
   `bolsa-side-1/2`, `bolsa-bottom-desktop-1`, `bolsa-bottom-mobile-1`;
+  practicas: `practicas-top-1`, `practicas-side-1/2`, `practicas-bottom-desktop-1`,
+  `practicas-bottom-mobile-1`;
   faq: `faq-bottom-desktop-1`, `faq-bottom-mobile-1`; about: `about-bottom-desktop-1`,
-  `about-bottom-mobile-1`). /jobs, /bolsa, /visa-pathways, /eventos and /guias share the
+  `about-bottom-mobile-1`). /jobs, /bolsa, /visa-pathways, /eventos, /guias and /practicas share the
   same always-on distribution: fixed 320×50 top (mobile/tablet), 970×90 bottom
   (desktop ≥lg) or 320×100 (mobile/tablet), sticky 160×600 side rails (desktop
   ≥1280px) around a centered content column; /faq and /about carry only the horizontal
