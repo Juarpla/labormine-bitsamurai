@@ -28,18 +28,19 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # Weekday schedule for the paid Apify sources (Free plan budget):
-      # LinkedIn Mon/Wed/Fri/Sun · Indeed Tue/Thu · Seek Sat+Tue · Glassdoor Wed+Sun.
+      # LinkedIn Mon/Wed/Fri · Indeed Tue/Thu · Seek Sat+Tue. Sun = `none`
+      # (sentinel: an EMPTY LM_SOURCES would mean "run ALL sources" in ingest).
       - name: Pick Apify sources for today
         id: sources
         run: |
           case $(date +%u) in
-            1) s=linkedin ;;           # Mon
-            2) s=indeed,seek ;;        # Tue
-            3) s=linkedin,glassdoor ;; # Wed
-            4) s=indeed ;;             # Thu
-            5) s=linkedin ;;           # Fri
-            6) s=seek ;;               # Sat
-            7) s=linkedin,glassdoor ;; # Sun
+            1) s=linkedin ;;      # Mon
+            2) s=indeed,seek ;;   # Tue
+            3) s=linkedin ;;      # Wed
+            4) s=indeed ;;        # Thu
+            5) s=linkedin ;;      # Fri
+            6) s=seek ;;          # Sat
+            7) s=none ;;          # Sun — keyless sources only
           esac
           if [[ -n "${{ inputs.sources }}" ]]; then
             s="${{ inputs.sources }}"

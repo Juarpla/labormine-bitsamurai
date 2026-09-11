@@ -1,7 +1,7 @@
 ---
 import { useTranslations, type Locale } from '../lib/i18n';
-import { stocks, companiesRanked, extremes, countNearHigh, rangePos, fmtUSD } from '../lib/stocks';
-import { signedPct, fmtDay, seriesById, yoyPct } from '../lib/indicators';
+import { stocks, topPerformers, extremes, countNearHigh, rangePos, fmtUSD } from '../lib/stocks';
+import { signedPct, fmtDay } from '../lib/indicators';
 import type { StockCompany } from '../schemas';
 
 interface Props {
@@ -11,14 +11,9 @@ const { locale = 'es' } = Astro.props;
 const t = useTranslations(locale);
 
 const total = stocks.companies.length;
-const ranked = companiesRanked();
+const top3 = topPerformers(3);
 const ext = extremes();
 const nearHigh = countNearHigh();
-const src = stocks.source;
-
-const copperYoy = yoyPct(seriesById('copper-price'));
-const goldYoy = yoyPct(seriesById('gold-price'));
-const hasMetales = copperYoy != null && goldYoy != null;
 
 /** Cierres mensuales → polilínea + punto final, misma gramática que Pulso. */
 function coords(vals: number[], w: number, h: number, pad: number) {
@@ -33,7 +28,7 @@ function coords(vals: number[], w: number, h: number, pad: number) {
 }
 
 const SW = 320;
-const SH = 48;
+const SH = 44;
 const SPAD = 5;
 
 const sparkOf = (c: StockCompany) =>
@@ -50,84 +45,76 @@ const changeOf = (c: StockCompany) => signedPct(c.change1yPct);
           {t('stocks.title')}
         </h2>
         <p class="mt-4 text-base leading-relaxed text-graphite-400">{t('stocks.lead')}</p>
-        <p class="mt-3 text-xs text-graphite-400">
-          {t('stocks.snapshot', { date: fmtDay(stocks.generatedAt) })}
-        </p>
       </div>
 
       {
         ext && (
-          <div class="reveal mt-10 rounded-2xl border border-graphite-800 bg-graphite-900 p-6 sm:p-8">
+          <div class="reveal mt-10 rounded-2xl border border-graphite-800 bg-graphite-900 p-4 sm:p-5">
             <h3 class="font-display text-sm font-semibold text-graphite-100">
               {t('stocks.analysis.title')}
             </h3>
-            <div class="mt-5 grid gap-6 sm:grid-cols-3">
-              <div>
+            <div class="mt-3 flex flex-wrap items-end gap-x-10 gap-y-4">
+              <div class="min-w-0">
                 <p class="text-[11px] text-graphite-400">{t('stocks.analysis.top')}</p>
-                <p class="mt-1 truncate text-xs font-medium text-graphite-200">
-                  {ext.top.name} · {ext.top.ticker} · {ext.top.metal}
+                <p class="mt-0.5 truncate text-xs font-medium text-graphite-200">
+                  {ext.top.name} · {ext.top.ticker}
                 </p>
-                <p class="mt-2 font-display text-4xl font-semibold text-brand-400">
-                  {changeOf(ext.top)}%
-                </p>
+                <p class="font-display text-2xl font-semibold text-brand-400">{changeOf(ext.top)}%</p>
               </div>
-              <div>
+              <div class="min-w-0">
                 <p class="text-[11px] text-graphite-400">{t('stocks.analysis.bottom')}</p>
-                <p class="mt-1 truncate text-xs font-medium text-graphite-200">
-                  {ext.bottom.name} · {ext.bottom.ticker} · {ext.bottom.metal}
+                <p class="mt-0.5 truncate text-xs font-medium text-graphite-200">
+                  {ext.bottom.name} · {ext.bottom.ticker}
                 </p>
-                <p class="mt-2 font-display text-4xl font-semibold text-graphite-100">
+                <p class="font-display text-2xl font-semibold text-graphite-100">
                   {changeOf(ext.bottom)}%
                 </p>
               </div>
-              <div>
+              <div class="min-w-0">
                 <p class="text-[11px] text-graphite-400">{t('stocks.analysis.nearHigh')}</p>
-                <p class="mt-2 font-display text-4xl font-semibold text-graphite-100">
+                <p class="font-display text-2xl font-semibold text-graphite-100">
                   {nearHigh}
-                  <span class="text-lg font-normal text-graphite-400"> / {total}</span>
+                  <span class="text-base font-normal text-graphite-400"> / {total}</span>
                 </p>
+                <p class="text-[10px] text-graphite-400">{t('stocks.analysis.nearHighHint')}</p>
               </div>
             </div>
-            {hasMetales && (
-              <p class="mt-6 border-t border-graphite-800 pt-4 text-[11px] leading-snug text-graphite-400">
-                {t('stocks.metales', {
-                  cobre: `${signedPct(copperYoy)}%`,
-                  oro: `${signedPct(goldYoy)}%`,
-                })}
-              </p>
-            )}
           </div>
         )
       }
 
-      <div class="reveal mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="mt-3">
+        <h3 class="font-display text-lg font-semibold text-graphite-100">{t('stocks.top3.title')}</h3>
+        <p class="mt-1 text-xs text-graphite-400">{t('stocks.top3.lead')}</p>
+      </div>
+
+      <div class="reveal mt-4 grid gap-4 md:grid-cols-3">
         {
-          ranked.map((c) => {
+          top3.map((c) => {
             const spark = sparkOf(c);
             const pos = rangePos(c);
-            const fromHigh =
-              c.high52w && c.price && ((c.price / c.high52w) * 100 - 100);
             const change = changeOf(c);
             const positive = (c.change1yPct ?? 0) > 0;
             return (
-              <article class="flex flex-col gap-2 rounded-2xl border border-graphite-800 bg-graphite-900 p-5">
+              <article class="flex flex-col gap-3 rounded-2xl border border-graphite-800 bg-graphite-900 p-5">
                 <div class="flex items-start justify-between gap-2">
-                  <h3 class="font-display text-sm font-semibold leading-snug text-graphite-100">
-                    {c.name}
-                  </h3>
+                  <div class="min-w-0">
+                    <h3 class="font-display text-base font-semibold leading-snug text-graphite-100">
+                      {c.name}
+                    </h3>
+                    <p class="text-[11px] text-graphite-400">
+                      {c.ticker} · {c.exchange}
+                    </p>
+                  </div>
                   <span class="shrink-0 rounded-full border border-graphite-600 bg-graphite-850 px-2 py-0.5 text-[10px] font-medium text-graphite-300">
                     {c.metal}
                   </span>
                 </div>
-                <p class="text-[11px] text-graphite-400">
-                  {c.ticker} · {c.exchange}
-                  {c.exchangeRef && <span> · {c.exchangeRef}</span>}
-                </p>
                 {spark && (
                   <svg
                     viewBox={`0 0 ${SW} ${SH}`}
                     preserveAspectRatio="none"
-                    class="h-12 w-full"
+                    class="h-14 w-full"
                     role="img"
                     aria-label={`${c.name} (${c.ticker}): ${fmtUSD(c.price)} hoy; ${change}% en el año.`}
                   >
@@ -156,7 +143,7 @@ const changeOf = (c: StockCompany) => signedPct(c.change1yPct);
                     </span>
                   )}
                 </div>
-                {pos != null && fromHigh != null && signedPct(fromHigh) && (
+                {pos != null && (
                   <div>
                     <div class="relative h-1.5 rounded-full bg-graphite-800" aria-hidden="true">
                       <span
@@ -168,9 +155,6 @@ const changeOf = (c: StockCompany) => signedPct(c.change1yPct);
                       <span>mín {fmtUSD(c.low52w ?? 0)}</span>
                       <span>máx {fmtUSD(c.high52w ?? 0)}</span>
                     </div>
-                    <p class="mt-0.5 text-[11px] text-graphite-300">
-                      {t('stocks.nearMax', { pct: signedPct(fromHigh) })}
-                    </p>
                   </div>
                 )}
                 <p class="mt-auto text-[11px] leading-snug text-graphite-400">
@@ -182,14 +166,21 @@ const changeOf = (c: StockCompany) => signedPct(c.change1yPct);
         }
       </div>
 
-      <p class="mt-6 text-[11px] leading-snug text-graphite-400">
+      <p class="mt-6 text-xs leading-snug text-graphite-300">
         {t('pulse.fuente')}: <a
-          href={src.officialUrl}
+          href={stocks.source.officialUrl}
           target="_blank"
           rel="noopener nofollow"
-          class="text-graphite-200 transition-colors hover:text-brand-400">{src.name}</a
-        > · {t('pulse.verificado', { date: fmtDay(src.lastVerifiedAt) })} · {t('stocks.disclaimer')}
+          class="text-graphite-200 transition-colors hover:text-brand-400">{stocks.source.name}</a
+        > · {t('stocks.snapshot', { date: fmtDay(stocks.generatedAt) })} · {t('stocks.disclaimer')}
       </p>
+
+      <a
+        href="/bolsa"
+        class="mt-3 inline-block text-sm font-semibold text-brand-400 hover:text-brand-300"
+      >
+        {t('stocks.cta')} →
+      </a>
     </section>
   )
 }

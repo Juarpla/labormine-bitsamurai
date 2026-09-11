@@ -167,6 +167,16 @@ const payload = JSON.stringify({
   const data = JSON.parse(document.getElementById('lm-jobs-data')!.textContent!);
   (window as any).__lmIndex = data.index;
 
+  // Prefiltro desde la URL (p. ej. /jobs?q=Buenaventura — enlaces desde /bolsa;
+  // /jobs?type=remote y /jobs?tier=abroad — "Ver todos" desde home).
+  const params = new URLSearchParams(location.search);
+  const initialQ = params.get('q');
+  if (initialQ) searchInput.value = initialQ;
+  const initialType = params.get('type');
+  if (initialType === 'onsite' || initialType === 'remote') typeSel.value = initialType;
+  const tierParam = params.get('tier');
+  let tierFilter = tierParam === 'pe' ? '1' : tierParam === 'remote' ? '2' : tierParam === 'abroad' ? '3' : '';
+
   function applyFilters() {
     let visible = 0;
     const cards = grid.querySelectorAll<HTMLElement>('article[data-country]');
@@ -182,6 +192,7 @@ const payload = JSON.stringify({
       if (category && card.dataset.category !== category) show = false;
       if (type && card.dataset.type !== type) show = false;
       if (visa && card.dataset.visa !== '1') show = false;
+      if (tierFilter && card.dataset.tier !== tierFilter) show = false;
       if (q && !card.dataset.search.includes(q)) show = false;
       card.classList.toggle('hidden', !show);
       if (show) visible++;
@@ -199,9 +210,12 @@ const payload = JSON.stringify({
     categorySel.value = '';
     typeSel.value = '';
     visaCb.checked = false;
+    tierFilter = '';
     searchInput.value = '';
     applyFilters();
   }
   clearBtn.addEventListener('click', clearFilters);
   document.getElementById('f-clear-empty')?.addEventListener('click', clearFilters);
+
+  if (initialQ || initialType || tierFilter) applyFilters();
 </script>

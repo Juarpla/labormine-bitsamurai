@@ -10,7 +10,7 @@
  *        --repair re-derives country/salary of stored jobs offline (no fetch).
  *        --prune re-filters the stored feed with the niche rules + TTL offline.
  * Optional env: ADZUNA_APP_ID, ADZUNA_APP_KEY (free tier, enables Adzuna)
- *               APIFY_TOKEN (enables apify-linkedin/indeed/seek/glassdoor)
+ *               APIFY_TOKEN (enables apify-linkedin/indeed/seek)
  *               LM_SOURCES (comma list; CI schedules Apify sources by weekday)
  */
 import { readFile, writeFile } from 'node:fs/promises';
@@ -603,7 +603,7 @@ function parseTitleLocation(title) {
 
 /* ------------------------- classification heuristics ---------------------- */
 
-const MINING_RE = /\b(min(e|ing)|mineral|geolog|geoscien|geotech|drill|blast|metallurg|tailings|open.?pit|underground|exploration)\b/i;
+const MINING_RE = /\b(min(e|ing)|mineral|geolog|geoscien|geotech|drill|blast|metallurg|tailings|open.?pit|underground|exploration|minas?|miner[oa]s?|miner[íi]a|perforaci[oó]n|voladuras?)\b/i;
 
 function classifyCategory(title) {
   const t = title.toLowerCase();
@@ -1493,7 +1493,7 @@ async function fetchJobbank(src, prevById) {
       source: 'jobbank',
       id: `jb-${c.num}`,
       company: c.business || src.company,
-      title,
+      title: c.title,
       country: src.country || 'CA',
       trustedCountry: true,
       city: splitLocation(c.locRaw).city,
@@ -1639,61 +1639,68 @@ async function fetchPnet(src, prevById) {
   return out;
 }
 
-// 12) Computrabajo — SSR list (base, base-p2, …) + JobPosting JSON-LD detail
+// 12) Computrabajo — SSR list (base, base-p2, …) + JobPosting JSON-LD detail.
+// One search URL per keyword (src.keywords[]); offers dedupe across keywords.
 async function fetchComputrabajo(src, prevById) {
   const cap = effectiveCap(src, MAX_PER_SOURCE);
   const out = [];
   const seen = new Set();
-  for (let page = 1; page <= Math.ceil(cap / 20); page++) {
-    const url = page === 1 ? src.url : `${src.url}-p${page}`;
-    let html;
-    try {
-      html = await fetchText(url);
-    } catch {
-      break;
-    }
-    const links = [...html.matchAll(/href="(\/ofertas-de-trabajo\/[a-z0-9-]+-[0-9A-F]{16,40})#/g)].map((m) => m[1]);
-    if (links.length === 0) break;
-    for (const path of links) {
-      if (seen.has(path)) continue;
-      seen.add(path);
-      const detailUrl = new URL(path, src.url).href;
-      let job = null;
+  const origin = new URL(src.url).origin;
+  const keywords = src.keywords?.length ? src.keywords : [null]; // null = use src.url verbatim
+  for (const kw of keywords) {
+    const base = kw ? `${origin}/trabajo-de-${encodeURIComponent(kw)}` : src.url;
+    for (let page = 1; page <= Math.ceil(cap / 20); page++) {
+      const url = page === 1 ? base : `${base}-p${page}`;
+      let html;
       try {
-        const dhtml = await fetchText(detailUrl);
-        const jp = collectJobPostings(extractJsonLd(dhtml))[0];
-        if (!jp) continue;
-        const addr = jp.jobLocation?.address || {};
-        const det = detectCountry(`${addr.addressLocality || ''} ${addr.addressRegion || ''} ${addr.addressCountry || ''}`);
-        const country = src.country || det;
-        const sal = jp.baseSalary;
-        let salary = null;
-        if (sal?.value?.value) {
-          const v = parseFloat(sal.value.value);
-          if (Number.isFinite(v)) {
-            const period = { MONTH: 'month', HOUR: 'hour', YEAR: 'year', DAY: 'day' }[sal.value.unitText?.toUpperCase()] || 'month';
-            salary = { min: v, max: null, currency: sal.currency || 'USD', period };
-          }
-        }
-        job = mkJob({
-          source: 'computrabajo',
-          id: `ct-${(detailUrl.match(/-([0-9A-F]{16,40})$/) || [])[1] || slugify(detailUrl).slice(-30)}`,
-          company: (jp.hiringOrganization && jp.hiringOrganization.name) || src.company,
-          title: (jp.title || '').trim(),
-          country,
-          trustedCountry: Boolean(src.country) && det === 'GLOBAL',
-          city: splitLocation(addr.addressLocality || '').city,
-          locationRaw: [addr.addressLocality, addr.addressRegion].filter(Boolean).join(', '),
-          salary,
-          postedAt: isoDate(jp.datePosted),
-          url: detailUrl,
-          description: String(jp.description || ''),
-        });
+        html = await fetchText(url);
       } catch {
-        continue;
+        break;
       }
-      out.push(job);
-      await sleep(250);
+      const links = [...html.matchAll(/href="(\/ofertas-de-trabajo\/[a-z0-9-]+-[0-9A-F]{16,40})#/g)].map((m) => m[1]);
+      if (links.length === 0) break;
+      for (const path of links) {
+        if (seen.has(path)) continue;
+        seen.add(path);
+        const detailUrl = new URL(path, src.url).href;
+        let job = null;
+        try {
+          const dhtml = await fetchText(detailUrl);
+          const jp = collectJobPostings(extractJsonLd(dhtml))[0];
+          if (!jp) continue;
+          const addr = jp.jobLocation?.address || {};
+          const det = detectCountry(`${addr.addressLocality || ''} ${addr.addressRegion || ''} ${addr.addressCountry || ''}`);
+          const country = src.country || det;
+          const sal = jp.baseSalary;
+          let salary = null;
+          if (sal?.value?.value) {
+            const v = parseFloat(sal.value.value);
+            if (Number.isFinite(v)) {
+              const period = { MONTH: 'month', HOUR: 'hour', YEAR: 'year', DAY: 'day' }[sal.value.unitText?.toUpperCase()] || 'month';
+              salary = { min: v, max: null, currency: sal.currency || 'USD', period };
+            }
+          }
+          job = mkJob({
+            source: 'computrabajo',
+            id: `ct-${(detailUrl.match(/-([0-9A-F]{16,40})$/) || [])[1] || slugify(detailUrl).slice(-30)}`,
+            company: (jp.hiringOrganization && jp.hiringOrganization.name) || src.company,
+            title: (jp.title || '').trim(),
+            country,
+            trustedCountry: Boolean(src.country) && det === 'GLOBAL',
+            city: splitLocation(addr.addressLocality || '').city,
+            locationRaw: [addr.addressLocality, addr.addressRegion].filter(Boolean).join(', '),
+            salary,
+            postedAt: isoDate(jp.datePosted),
+            url: detailUrl,
+            description: String(jp.description || ''),
+          });
+        } catch {
+          continue;
+        }
+        out.push(job);
+        await sleep(250);
+        if (out.length >= cap) break;
+      }
       if (out.length >= cap) break;
     }
     if (out.length >= cap) break;
@@ -1723,7 +1730,9 @@ async function naventUrlMap(host) {
 async function fetchNavent(src) {
   const cap = effectiveCap(src, MAX_PER_SOURCE);
   const urlMap = await naventUrlMap(src.host);
-  const queries = ['mineria', 'minero', 'mina'];
+  // Company-scoped sources (empresaId) query the company name directly; generic
+  // boards run the mining keyword queries.
+  const queries = src.query ? [src.query] : ['mineria', 'minero', 'mina', 'minera'];
   const byId = new Map();
   for (const q of queries) {
     for (let page = 0; page < 10; page++) {
@@ -1753,12 +1762,16 @@ async function fetchNavent(src) {
   }
   const out = [];
   for (const [id, o] of byId) {
+    // Company-scoped source: the idEmpresa filter is the niche mechanism —
+    // skip rows from other advertisers (e.g. Bureau Veritas posting "para" Hudbay).
+    if (src.empresaId && String(o.idEmpresa) !== String(src.empresaId)) continue;
     const url = urlMap.get(id);
     if (!url) continue; // brand-new ads resolve next run via the sitemap
     const title = o.titulo || '';
     const detail = String(o.detalle || '');
     // The `mina`/`minero` full-text queries match unrelated words (e.g. "administración") — keep mining-relevant only.
-    if (!MINING_RE.test(title) && !MINING_RE.test(detail.slice(0, 500))) continue;
+    // MINING_RE is English-keyed and would drop Spanish-only company feeds — bypass it when empresa-scoped.
+    if (!src.empresaId && !MINING_RE.test(title) && !MINING_RE.test(detail.slice(0, 500))) continue;
     out.push(
       mkJob({
         source: 'navent',
@@ -1775,6 +1788,170 @@ async function fetchNavent(src) {
       })
     );
     if (out.length >= cap) break;
+  }
+  return out;
+}
+
+// 13b) Radancy (Hudbay ATS) — sitemap stubs + microdata JobPosting on the detail
+// page (no JSON-LD on this board). Emits Peru postings only (tier 1): today the
+// board is Canada-only, so most stubs resolve to `continue` — that is expected,
+// not a failure (Hudbay's official Peru channel is the Bumeran profile above).
+function radancyMicrodata(html) {
+  const grab = (name) => (html.match(new RegExp(`itemprop="${name}"[^>]*content="([^"]*)"`)) || [])[1] || '';
+  const titleM = html.match(/<h1[^>]*itemprop="title"[^>]*>([^<]+)</);
+  const descM = html.match(/<span itemprop="description"[^>]*>(.*?)<\/span>\s*<p class="job-location">/s);
+  return {
+    title: (titleM ? titleM[1] : '').trim(),
+    datePosted: grab('datePosted'),
+    locality: grab('addressLocality'),
+    region: grab('addressRegion'),
+    country: grab('addressCountry'),
+    description: descM ? descM[1] : '',
+  };
+}
+
+async function fetchRadancy(src, prevById) {
+  const cap = effectiveCap(src, MAX_PER_SOURCE);
+  const xml = await fetchText(src.sitemap, { timeout: 60000 });
+  const seen = new Set();
+  const stubs = parseSitemap(xml)
+    .entries.filter((e) => /\/job\/.*\/\d+\/?$/.test(e.loc))
+    .filter((e) => (seen.has(e.loc) ? false : (seen.add(e.loc), true)))
+    .map((e) => ({ id: (e.loc.match(/\/(\d+)\/?$/) || [])[1], loc: e.loc, lastmod: e.lastmod }))
+    .filter((s) => s.id)
+    .sort((a, b) => (b.lastmod || '').localeCompare(a.lastmod || ''));
+  const out = [];
+  for (const stub of stubs) {
+    if (out.length >= cap) break;
+    const prev = prevById.get(`hb-${stub.id}`);
+    if (prev && prev.country && prev.country !== 'PE') continue; // known non-PE — don't refetch
+    const job = mkJob({
+      source: 'radancy',
+      id: `hb-${stub.id}`,
+      company: src.company,
+      title: decodeURIComponent(stub.loc.split('/job/')[1].replace(/\/\d+\/?$/, '').replace(/-/g, ' ')),
+      country: 'GLOBAL',
+      postedAt: isoDate(stub.lastmod),
+      url: stub.loc,
+      description: '',
+    });
+    if (hydrateFromPrev(prevById, job)) {
+      out.push(job);
+      continue;
+    }
+    let meta = null;
+    try {
+      meta = radancyMicrodata(await fetchText(stub.loc, { timeout: 40000 }));
+    } catch {
+      /* unreachable this run — retry next */
+      await sleep(src.delayMs || 5000);
+      continue;
+    }
+    await sleep(src.delayMs || 5000); // pace Radancy across every detail fetch
+    if (!meta || !meta.title) continue;
+    const cc = (meta.country || '').toUpperCase();
+    const raw = [meta.locality, meta.region].filter(Boolean).join(', ');
+    // Niche scoping: emit only Peru postings; foreign rows would be dropped by
+    // inNiche() anyway (no visa signal on this board), so keep the feed clean.
+    if (cc !== 'PE' && detectCountry(`${raw} ${meta.title}`) !== 'PE') continue;
+    const text = stripTags(decodeEntities(meta.description || ''));
+    // Board is not mining-only — same relevance gate as Brunel.
+    if (!MINING_RE.test(meta.title) && !MINING_RE.test(text.slice(0, 600))) continue;
+    job.company = src.company;
+    job.companySlug = slugify(job.company);
+    job.title = meta.title;
+    job.slug = slugify(`${job.company}-${job.title}-${job.country}-${stub.id}`);
+    job.country = 'PE';
+    job.city = splitLocation(meta.locality).city;
+    job.locationRaw = raw;
+    job.postedAt = isoDate(meta.datePosted, isoDate(stub.lastmod));
+    if (text) {
+      job.description = htmlify(text.slice(0, DESC_MAX));
+      job.excerpt = excerpt(text);
+    }
+    out.push(job);
+  }
+  return out;
+}
+
+// 13c) Gupy (Nexa Perú) — official Google-for-Jobs sitemap at job-boards.api.gupy.io
+// (advertised in the subdomain's robots.txt; scraping allowed) + JSON-LD JobPosting
+// on each detail page. Single-company feed in Spanish: no MINING_RE gate — same
+// criteria as empresa-scoped navent (the regex is English-keyed and would drop
+// the whole feed).
+function gupyJobId(loc) {
+  // /job/<base64 payload> → {"jobId":123,"source":"google_for_jobs"}
+  const b64 = (loc.split('/job/')[1] || '').split('?')[0];
+  if (!b64) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    return payload.jobId ? String(payload.jobId) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchGupy(src, prevById) {
+  const cap = effectiveCap(src, MAX_PER_SOURCE);
+  const xml = await fetchText(src.sitemap, { timeout: 60000 });
+  const seen = new Set();
+  const stubs = parseSitemap(xml)
+    .entries
+    .map((e) => ({ id: gupyJobId(e.loc), loc: e.loc.split('?')[0] }))
+    .filter((s) => s.id && !seen.has(s.id) && (seen.add(s.id), true));
+  const out = [];
+  for (const stub of stubs) {
+    if (out.length >= cap) break;
+    const job = mkJob({
+      source: 'gupy',
+      id: `gupy-${stub.id}`,
+      company: src.company,
+      title: '',
+      country: src.country || 'GLOBAL',
+      trustedCountry: Boolean(src.country),
+      postedAt: null,
+      url: stub.loc,
+      description: '',
+    });
+    if (hydrateFromPrev(prevById, job)) {
+      out.push(job);
+      continue;
+    }
+    try {
+      const html = await fetchText(stub.loc, { timeout: 40000 });
+      const jp = collectJobPostings(extractJsonLd(html))[0];
+      if (!jp) continue;
+      const addr = jp.jobLocation?.address || {};
+      const det = detectCountry(`${addr.addressLocality || ''} ${addr.addressRegion || ''} ${addr.addressCountry || ''}`);
+      const sal = jp.baseSalary;
+      let salary = null;
+      if (sal?.value?.value) {
+        const v = parseFloat(sal.value.value);
+        if (Number.isFinite(v)) {
+          const period = { MONTH: 'month', HOUR: 'hour', YEAR: 'year', DAY: 'day' }[sal.value.unitText?.toUpperCase()] || 'month';
+          salary = { min: v, max: null, currency: sal.currency || 'USD', period };
+        }
+      }
+      const text = stripTags(decodeEntities(String(jp.description || '')));
+      job.company = src.company; // board org name is "#venparanexa Perú" — keep the configured company
+      job.companySlug = slugify(job.company);
+      job.title = (jp.title || '').trim();
+      job.slug = slugify(`${job.company}-${job.title}-${job.country}-${stub.id}`);
+      job.country = src.country || det;
+      job.city = splitLocation(addr.addressLocality || '').city;
+      job.locationRaw = [addr.addressLocality, addr.addressRegion].filter(Boolean).join(', ');
+      job.salary = salary;
+      job.postedAt = isoDate(jp.datePosted);
+      if (jp.validThrough) job._validThrough = isoDate(jp.validThrough); // internal hint; dropped by schema
+      if (text) {
+        job.description = htmlify(text.slice(0, DESC_MAX));
+        job.excerpt = excerpt(text);
+      }
+      out.push(job);
+    } catch {
+      /* unreachable this run — retry next */
+    }
+    await sleep(400);
   }
   return out;
 }
@@ -1930,7 +2107,7 @@ function parseApifyItem(it) {
   if (!/^https?:\/\//.test(url)) return null;
   const company = it.company || it.companyName || it.company_name || it.employer?.name || '';
   const locRaw = typeof it.location === 'string' ? it.location : it.location?.formattedLocation || it.location?.location || '';
-  const posted = it.postedAt || it.publishedAt || it.datePosted || it.posted_at || it.listedAt;
+  const posted = it.postedAt || it.publishedAt || it.postedDate || it.datePosted || it.posted_at || it.listedAt;
   const desc = it.descriptionText || it.description || it.descriptionHTML || it.description_html || '';
   return { title, url, company, locRaw, posted, desc };
 }
@@ -1948,71 +2125,73 @@ async function runApifyActor(actorId, input, timeoutMs = 330000) {
   return Array.isArray(data) ? data : data.items || [];
 }
 
-async function fetchApifyLinkedin(cfg, prevById) {
+/** LinkedIn keyword search via kaix (LinkedIn public guest API, no account):
+ *  one actor run per market×keyword, markets in config order (priority);
+ *  `cap` is the TOTAL per-run budget and each query gets the remaining budget,
+ *  so earlier markets fill first. Country = search scope (like Indeed).
+ *  Dedupe by URL inside the run (final cross-source dedupe happens in main). */
+async function fetchApifyLinkedin(cfg) {
   if (!process.env.APIFY_TOKEN) {
     console.log('ℹ LinkedIn skipped (set APIFY_TOKEN to enable)');
     return [];
   }
-  const companies = cfg.companies || [];
-  let items = [];
-  // Primary: cheap_scraper resolves company names internally (verified).
-  // maxItems hard-bounds the pay-per-result cost (actor requires >= 150).
-  const maxItems = Math.max(150, effectiveCap({ cap: cfg.cap }, MAX_PER_SOURCE));
-  try {
-    items = await runApifyActor(cfg.fallbackActor, { companyInclude: companies, maxItems });
-    console.log(`✓ apify-linkedin:${cfg.fallbackActor} → ${items.length} raw items (maxItems ${maxItems})`);
-  } catch (err) {
-    console.error(`✗ apify-linkedin primary (${cfg.fallbackActor}) → ${err.message}`);
-  }
-  // Upgrade path: kaix is cheaper per 1k but needs numeric company IDs — use them when the ids file exists.
-  if (items.length === 0 && cfg.actor) {
-    let ids = {};
-    try {
-      ids = JSON.parse(await readFile(new URL('../' + cfg.idsFile, import.meta.url), 'utf8'));
-    } catch {
-      /* no ids file yet */
-    }
-    const withIds = companies.map((c) => ids[c]).filter(Boolean);
-    if (withIds.length) {
-      try {
-        items = await runApifyActor(cfg.actor, { companyId: withIds.map(String), fetchDetails: true });
-        console.log(`✓ apify-linkedin:${cfg.actor} → ${items.length} raw items (by id)`);
-      } catch (err) {
-        console.error(`✗ apify-linkedin (${cfg.actor}) → ${err.message}`);
-      }
-    }
-  }
   const cap = effectiveCap({ cap: cfg.cap }, MAX_PER_SOURCE);
   const out = [];
   const seen = new Set();
-  for (const it of items) {
-    const p = parseApifyItem(it);
-    if (!p) continue;
-    const key = `${slugify(p.company)}::${normTitle(p.title)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const { city } = splitLocation(p.locRaw);
-    out.push(
-      mkJob({
-        source: 'apify-linkedin',
-        id: `li-${slugify(p.url).slice(-40)}`,
-        company: p.company || 'LinkedIn',
-        title: p.title,
-        country: detectCountry(`${p.locRaw} ${String(p.desc).slice(0, 800)}`),
-        city,
-        locationRaw: p.locRaw,
-        remote: /\bremote\b/i.test(p.locRaw || ''),
-        postedAt: isoDate(p.posted),
-        url: p.url,
-        description: typeof p.desc === 'string' && /</.test(p.desc) ? stripTags(decodeEntities(p.desc)) : String(p.desc || ''),
-      })
-    );
-    if (out.length >= cap) break;
+  let remaining = cap;
+  for (const m of cfg.markets || []) {
+    for (const keyword of m.keywords || []) {
+      if (remaining <= 0) break;
+      let items = [];
+      try {
+        items = await runApifyActor(cfg.actor, {
+          keywords: keyword,
+          location: m.location || '',
+          maxJobs: remaining,
+          sortBy: 'recent',
+          datePosted: cfg.datePosted || 'past_week',
+          fetchDetails: true,
+        });
+      } catch (err) {
+        console.error(`✗ apify-linkedin:${m.country}/${keyword} → ${err.message}`);
+        continue;
+      }
+      remaining -= items.length; // billed per row — the budget counts raw rows
+      let accepted = 0;
+      for (const it of items) {
+        const p = parseApifyItem(it);
+        if (!p || !/^https?:\/\//.test(p.url) || seen.has(p.url)) continue;
+        // LinkedIn guest search matches fuzzily (e.g. "Analista Contable" for
+        // "minería") — same mining gate as the navent keyword feeds (line ~1767).
+        if (!MINING_RE.test(p.title) && !MINING_RE.test(String(p.desc || '').slice(0, 500))) continue;
+        seen.add(p.url);
+        const { city } = splitLocation(p.locRaw);
+        out.push(
+          mkJob({
+            source: 'apify-linkedin',
+            id: `li-${slugify(p.url).slice(-40)}`,
+            company: p.company || 'LinkedIn',
+            title: p.title,
+            country: m.country,
+            trustedCountry: true,
+            city,
+            locationRaw: p.locRaw,
+            remote: /\bremote\b/i.test(p.locRaw || ''),
+            postedAt: isoDate(p.posted),
+            url: p.url,
+            description: typeof p.desc === 'string' && /</.test(p.desc) ? stripTags(decodeEntities(p.desc)) : String(p.desc || ''),
+          })
+        );
+        accepted++;
+      }
+      console.log(`✓ apify-linkedin:${m.country}/${keyword} → ${accepted} jobs (raw ${items.length}, budget left ${Math.max(remaining, 0)})`);
+    }
+    if (remaining <= 0) break;
   }
   return out;
 }
 
-/* -------------------- apify: indeed / seek / glassdoor -------------------- */
+/* -------------------- apify: indeed / seek -------------------- */
 
 /** Structured salary from actor fields → SalarySchema shape. Periods outside
  *  the schema enum (weekly etc.) yield null — never invent a conversion. */
@@ -2147,65 +2326,8 @@ async function fetchApifySeek(cfg) {
   return out;
 }
 
-/** Glassdoor markets (country-scoped search; no location = site-wide). Only the
- *  markets that exist on Glassdoor (21 markets, no South Africa site). */
-async function fetchApifyGlassdoor(cfg) {
-  if (!process.env.APIFY_TOKEN) {
-    console.log('ℹ Glassdoor skipped (set APIFY_TOKEN to enable)');
-    return [];
-  }
-  const cap = effectiveCap({ cap: cfg.cap }, MAX_PER_SOURCE);
-  const out = [];
-  const seen = new Set();
-  let remaining = cap;
-  for (const m of cfg.markets || []) {
-    if (remaining <= 0) break;
-    let items = [];
-    try {
-      items = await runApifyActor(cfg.actor, {
-        query: m.keyword || 'mining',
-        country: m.country,
-        maxResults: remaining,
-        postedDays: cfg.postedDays || 14,
-        includeDetails: true,
-        includeCompanyProfile: false,
-      });
-    } catch (err) {
-      console.error(`✗ apify-glassdoor:${m.country} → ${err.message}`);
-      continue;
-    }
-    remaining -= items.length; // billed per row — the budget counts raw rows
-    let accepted = 0;
-    for (const it of items) {
-      const title = it.title || '';
-      const url = it.canonicalUrl || it.sourceUrl || '';
-      if (!title || !/^https?:\/\//.test(url) || seen.has(url)) continue;
-      seen.add(url);
-      const locRaw = it.locationFormatted || it.location || '';
-      const { city } = splitLocation(locRaw);
-      out.push(
-        mkJob({
-          source: 'apify-glassdoor',
-          id: `glassdoor-${it.jobKey || slugify(url).slice(-40)}`,
-          company: it.company || 'Glassdoor',
-          title,
-          country: m.country,
-          trustedCountry: true,
-          city,
-          locationRaw: locRaw,
-          remote: Boolean(it.isRemote) || /\bremote\b/i.test(locRaw),
-          postedAt: isoDate(it.postedDate),
-          url,
-          description: typeof it.description === 'string' ? it.description : '',
-          salary: salaryFromStructured(it.salaryMin, it.salaryMax, it.salaryCurrency, it.salaryType),
-        })
-      );
-      accepted++;
-    }
-    console.log(`✓ apify-glassdoor:${m.country}/${m.keyword || 'mining'} → ${accepted} jobs (raw ${items.length}, budget left ${Math.max(remaining, 0)})`);
-  }
-  return out;
-}
+/** Glassdoor: removed (owner decision 2026-09-11) — markets fuera del nicho útil
+ *  y cobertura cubierta por Indeed/Seek/Job Bank. */
 
 /* ------------------------------ translations ------------------------------ */
 /* Titles are auto-translated (es/en/pt) via the multi-provider LLM chain in   */
@@ -2508,6 +2630,8 @@ async function main() {
     computrabajo: fetchComputrabajo,
     navent: fetchNavent,
     smartrecruiters: fetchSmartrecruiters,
+    radancy: fetchRadancy,
+    gupy: fetchGupy,
     eightfold: fetchEightfold,
     'taleo-rss': fetchTaleoRss,
     empleosmineros: fetchEmpleosmineros,
@@ -2534,7 +2658,7 @@ async function main() {
       console.log(`ℹ apify-linkedin skipped (not in LM_SOURCES: ${LM_SOURCES.join(',')})`);
     } else {
       try {
-        const jobs = await fetchApifyLinkedin(config.linkedin, prevById);
+        const jobs = await fetchApifyLinkedin(config.linkedin);
         all.push(...jobs);
         if (jobs.length) console.log(`✓ apify-linkedin → ${jobs.length} jobs`);
       } catch (err) {
@@ -2549,7 +2673,6 @@ async function main() {
   const APIFY_MARKETPLACES = [
     ['indeed', fetchApifyIndeed],
     ['seek', fetchApifySeek],
-    ['glassdoor', fetchApifyGlassdoor],
   ];
   for (const [key, fetcher] of APIFY_MARKETPLACES) {
     const cfg = config[key];

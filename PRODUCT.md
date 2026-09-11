@@ -71,17 +71,22 @@ Capacidades confirmadas:
   mensual por CI (`refresh-indicators.yml`, día 4); si una fuente falla, sus
   datos y fecha previos envejecen visiblemente ("verificado {fecha}") sin
   inventar nada. Fuentes y método: `docs/MINING-DATA-SOURCES.md`.
-- Bolsa de las mineras en `/` (`StocksPulse.astro`): cotizaciones anuales de
-  las 8 mineras con minas en Perú (Yahoo Finance, ADR en USD; nombres
+- Bolsa de las mineras en `/` y en `/bolsa` (`StocksPulse.astro` +
+  `BolsaView.astro`): cotizaciones anuales de las 12 mineras vinculadas a Perú
+  (Yahoo Finance, todo normalizado a USD —ADR nativos o FX de Yahoo—; nombres
   comerciales y minas curados a mano), refresco mensual en el mismo cron del
-  pulso. Vista de análisis sin jerga: ganadora/rezagada del año, cuántas
-  cotizan a menos de 10% de su máximo anual, rango de 52 semanas como
-  medidor. Siempre con "no es asesoría de inversión"; Yahoo es agregador, no
-  fuente primaria.
-- Páginas: `/` (capítulos por tier), `/jobs` (feed por tiers + filtros),
-  `/visa-pathways`, `/eventos`, `/guias` (2 guías), `/faq`, `/about`,
-  `/privacy`, `/terms`, `/contact`, y detalle de cada empleo con JobPosting
-  JSON-LD.
+  pulso. El home muestra "El año en revisión" compacto (ganadora/rezagada,
+  cuántas cotizan cerca de su máximo anual —visual de 12 puntos—) y el top 3
+  por crecimiento con CTA a `/bolsa`; ahí va el análisis completo sin jerga
+  (termómetro 52s, caída desde la cima, mejor/peor mes, metales cobre/oro,
+  tabla ordenable con enlace `/jobs?q=` por minera) para que el postulante se
+  haga una idea de qué mineras están creciendo. Siempre con "no es asesoría de
+  inversión"; Yahoo es agregador, no fuente primaria.
+- Páginas: `/` (capítulos por tier), `/jobs` (feed por tiers + filtros, con
+  prefiltro `?q=` desde los enlaces de /bolsa), `/bolsa` (análisis de las
+  12 mineras), `/visa-pathways`, `/eventos`, `/guias` (2 guías), `/faq`,
+  `/about`, `/privacy`, `/terms`, `/contact`, y detalle de cada empleo con
+  JobPosting JSON-LD.
 - Vista IA de descripciones bajo demanda (`/api/translate-description`) con
   badge "generado con IA" y toggle de vuelta; la original es el default.
 

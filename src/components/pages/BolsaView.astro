@@ -1,0 +1,714 @@
+---
+import AdSlot from '../AdSlot.astro';
+import { useTranslations, type Locale } from '../../lib/i18n';
+import { stocks, companiesRanked, rangePos, drawdownPct, isNearHigh, monthExtremes, fmtUSD } from '../../lib/stocks';
+import { seriesById, yoyPct, signedPct, fmtDay } from '../../lib/indicators';
+import type { StockCompany } from '../../schemas';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'es' } = Astro.props;
+const t = useTranslations(locale);
+
+const total = stocks.companies.length;
+const ranked = companiesRanked();
+
+/** Etiqueta del mes de un índice de la serie: la serie termina en el mes de
+ *  generatedAt (Yahoo devuelve la barra parcial actual al final). */
+const monthFmt = new Intl.DateTimeFormat('es-PE', { month: 'short' });
+function monthLabelOf(indexFromEnd: number): string {
+  const base = new Date(`${stocks.generatedAt.slice(0, 10)}T12:00:00Z`);
+  const d = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() - indexFromEnd, 1));
+  return monthFmt.format(d).replace('.', '');
+}
+
+const extremesByCompany = new Map(
+  ranked
+    .map((c) => [c.id, monthExtremes(c)] as const)
+    .filter(([, m]) => m != null)
+);
+
+// ── Termómetro: líder destacado + campo compacto ────────────────────────────
+const leader = ranked.at(0);
+const field = ranked.slice(1);
+const LW = 640;
+const LH = 120;
+const LPAD = 8;
+/** Gráfica grande del líder: mismo dominio 52s, lienzo más alto. */
+function leaderChart(c: StockCompany) {
+  if (c.series.length < 2) return null;
+  const lo = Math.min(c.low52w ?? Infinity, ...c.series);
+  const hi = Math.max(c.high52w ?? -Infinity, ...c.series);
+  return coords(c.series, LW, LH, LPAD, lo, hi);
+}
+const leaderView = leader
+  ? {
+      pos: rangePos(leader),
+      chart: leaderChart(leader),
+      near: isNearHigh(leader),
+      positive: (leader.change1yPct ?? 0) > 0,
+    }
+  : null;
+
+// ── Mejor/peor mes: una sola escala compartida entre las 12 ──────────────────
+const mesesRows = ranked
+  .map((c) => [c, extremesByCompany.get(c.id)] as const)
+  .filter(([, ex]) => ex != null)
+  .sort((a, b) => b[1]!.best.pct - a[1]!.best.pct);
+const mesesSinSerie = ranked.filter((c) => !extremesByCompany.has(c.id));
+/** Media altura de barra (px) en un lienzo de h-9; escala común a las 12. */
+const MES_HALF_PX = 16;
+const mesesMax = Math.max(
+  1,
+  ...mesesRows.flatMap(([, ex]) => [Math.abs(ex!.best.pct), Math.abs(ex!.worst.pct)]),
+);
+const mesBarH = (pct: number) => Math.max(2, (Math.abs(pct) / mesesMax) * MES_HALF_PX);
+
+// ── Metales (indicators.json — misma cadencia mensual) ──────────────────────
+const copper = seriesById('copper-price');
+const gold = seriesById('gold-price');
+const copperYoy = copper ? yoyPct(copper) : null;
+const goldYoy = gold ? yoyPct(gold) : null;
+const hasMetales = copper != null && gold != null && copperYoy != null && goldYoy != null;
+
+// ── Geometría SVG compartida (misma gramática que Pulso) ────────────────────
+/** Polilínea escalada al dominio [lo,hi] (o al de la propia serie). Devuelve
+ *  la línea, el polígono de área cerrado hasta el borde inferior y los
+ *  extremos, para dibujar forma + relleno con degradado. */
+function coords(vals: number[], w: number, h: number, pad: number, lo?: number, hi?: number) {
+  const min = lo ?? Math.min(...vals);
+  const max = hi ?? Math.max(...vals);
+  const span = max - min || 1;
+  const xy = vals.map((v, i) => ({
+    x: pad + (i / (vals.length - 1)) * (w - pad * 2),
+    y: pad + (1 - (v - min) / span) * (h - pad * 2),
+  }));
+  const poly = xy.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${poly} L ${xy.at(-1)!.x.toFixed(1)},${h} L ${xy[0].x.toFixed(1)},${h} Z`;
+  return { poly, area, first: xy[0], last: xy.at(-1)! };
+}
+const MW = 640;
+const MH = 112;
+const MPAD = 8;
+
+/** Ventana de 12 meses: exactamente los mismos puntos que mide el % interanual. */
+function yearWindow(points: { date: string; value: number | null }[]) {
+  const pts = points.slice(-13).filter((p) => p.value != null);
+  return { vals: pts.map((p) => p.value as number), dates: pts.map((p) => p.date) };
+}
+
+const monthTickFmt = new Intl.DateTimeFormat('es-PE', { month: 'short' });
+const monthYearFmt = new Intl.DateTimeFormat('es-PE', { month: 'short', year: 'numeric' });
+/** 'YYYY-MM' → "oct", con año en los extremos del eje (siempre minúscula). */
+function tickLabel(dateStr: string, withYear: boolean): string {
+  const [y, m] = dateStr.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1, 1));
+  return (withYear ? monthYearFmt : monthTickFmt).format(d).replace('.', '').toLowerCase();
+}
+
+const TW = 640;
+const TH = 44;
+const TPAD = 5;
+/** Mini-área del recorrido anual de una minera, escalada al rango 52s para
+ *  que las etiquetas mín/máx coincidan con los bordes del gráfico. */
+function termoChart(c: StockCompany) {
+  if (c.series.length < 2) return null;
+  const lo = Math.min(c.low52w ?? Infinity, ...c.series);
+  const hi = Math.max(c.high52w ?? -Infinity, ...c.series);
+  return coords(c.series, TW, TH, TPAD, lo, hi);
+}
+
+/** Datos listos para dibujar: ventana de 12 meses por metal. */
+const metalBlocks = hasMetales
+  ? [
+      { id: 'cobre', title: t('bolsa.metales.cobre'), data: copper!, yoy: copperYoy! },
+      { id: 'oro', title: t('bolsa.metales.oro'), data: gold!, yoy: goldYoy! },
+    ].map(({ id, title, data, yoy }) => {
+      const { vals, dates } = yearWindow(data.points);
+      return {
+        id,
+        title,
+        yoy,
+        dates,
+        lastDate: dates.at(-1)!,
+        chart: vals.length >= 2 ? coords(vals, MW, MH, MPAD) : null,
+      };
+    })
+  : [];
+const metalCharts = metalBlocks.filter((b) => b.chart != null);
+
+/** Eje de meses compartido: solo si ambas ventanas cubren los mismos meses
+ *  (misma cadencia). Si difieren, cada bloque dibuja el suyo. */
+const metalTicks =
+  metalCharts.length === 2 && metalCharts[0]!.dates.length === metalCharts[1]!.dates.length
+    ? (() => {
+        const dates = metalCharts[0]!.dates;
+        const n = dates.length;
+        const idx = [...new Set([0, Math.round((n - 1) / 3), Math.round(((n - 1) * 2) / 3), n - 1])];
+        return idx.map((i) => ({ label: tickLabel(dates[i]!, i === 0 || i === n - 1) }));
+      })()
+    : null;
+
+/** Barra de "caída desde la cima": ancho ∝ cuánto bajó del máximo. */
+const barW = (c: (typeof ranked)[number]) => {
+  const dd = drawdownPct(c);
+  if (dd == null) return 0;
+  return Math.min(100, Math.abs(dd));
+};
+
+const drawdownSorted = [...ranked]
+  .filter((c) => drawdownPct(c) != null)
+  .sort((a, b) => Math.abs(drawdownPct(b)!) - Math.abs(drawdownPct(a)!));
+
+const tableRows = ranked;
+/** ⓘ con tooltip nativo: misma marca en cada encabezado de análisis. */
+const INFO_SVG =
+  '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6.5" stroke="#7A8598" stroke-width="1.4"/><circle cx="8" cy="5.2" r="0.9" fill="#7A8598"/><path d="M8 7.4v3.6" stroke="#7A8598" stroke-width="1.4" stroke-linecap="round"/></svg>';
+const infoTip = (label: string) =>
+  `<span class="inline-flex align-middle" title="${label}" aria-label="${label}">${INFO_SVG}</span>`;
+const TOOLTIP_LABEL = 'Cómo leer esta cifra';
+---
+
+<div class="xl:grid xl:grid-cols-[160px_56rem_160px] xl:justify-center xl:gap-4">
+  <AdSlot
+    slotId="bolsa-side-1"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+
+  <section class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
+    <h1 class="max-w-2xl font-display text-4xl font-semibold leading-[1.08] tracking-tight text-balance text-graphite-100 sm:text-5xl xl:text-6xl">{t('bolsa.title')}</h1>
+    <p class="mt-4 max-w-2xl text-graphite-400">{t('bolsa.lead')}</p>
+    <p class="mt-3 text-xs text-graphite-400">
+      {t('bolsa.snapshot', { date: fmtDay(stocks.generatedAt), n: total })}
+    </p>
+
+    <AdSlot
+      slotId="bolsa-top-1"
+      size={{ w: 320, h: 50 }}
+      media="(max-width: 1023.98px)"
+      locale={locale}
+      class="mx-auto w-fit lg:hidden"
+    />
+
+    {/* 1 · El termómetro del año — cada minera en su propio recorrido 52s */}
+    <div class="reveal mt-12 sm:mt-16">
+      <h2 class="font-display text-3xl font-semibold text-graphite-100 sm:text-4xl">
+        <Fragment set:html={t('bolsa.termometro.title') + ' ' + infoTip(TOOLTIP_LABEL)} />
+      </h2>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-graphite-400">{t('bolsa.termometro.desc')}</p>
+
+      {/* El líder del año abre el termómetro: su recorrido merece la escala mayor */}
+      {leader && leaderView && (
+        <article class="mt-8 rounded-2xl border border-graphite-800 bg-graphite-900 p-5 sm:p-8">
+          <div class="flex flex-wrap items-start justify-between gap-x-8 gap-y-3">
+            <div class="min-w-0">
+              <h3 class="font-display text-2xl font-semibold text-graphite-100 sm:text-3xl">
+                <span class="mr-3 text-xs font-normal text-graphite-400">01</span>
+                {leader.name}
+              </h3>
+              <p class="mt-1 text-xs text-graphite-400">
+                {leader.ticker} · {leader.metal} · hoy {fmtUSD(leader.price)}
+              </p>
+            </div>
+            <p
+              class:list={[
+                'font-display text-4xl font-semibold tabular-nums sm:text-5xl',
+                leaderView.near
+                  ? 'text-brand-400'
+                  : leaderView.positive
+                    ? 'text-graphite-100'
+                    : 'text-graphite-300',
+              ]}
+            >
+              {signedPct(leader.change1yPct)}%
+            </p>
+          </div>
+          {leaderView.chart && (
+            <div class="mt-5">
+              <svg
+                viewBox={`0 0 ${LW} ${LH}`}
+                preserveAspectRatio="none"
+                class="h-28 w-full sm:h-36"
+                role="img"
+                aria-label={
+                  leaderView.pos != null
+                    ? `${leader.name}: recorrido de los últimos 12 meses; hoy a ${Math.round(leaderView.pos * 100)}% de su rango de 52 semanas.`
+                    : `${leader.name}: recorrido de los últimos 12 meses.`
+                }
+              >
+                <defs>
+                  <linearGradient id={`grad-termo-${leader.id}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stop-color={leaderView.near ? '#FFC247' : '#C6CEDD'}
+                      stop-opacity={leaderView.near ? '0.18' : '0.14'}
+                    />
+                    <stop offset="100%" stop-color={leaderView.near ? '#FFC247' : '#C6CEDD'} stop-opacity="0" />
+                  </linearGradient>
+                </defs>
+                <polygon points={leaderView.chart.area} fill={`url(#grad-termo-${leader.id})`} class="lm-chart-area" />
+                <polyline
+                  points={leaderView.chart.poly}
+                  fill="none"
+                  stroke="#C6CEDD"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  vector-effect="non-scaling-stroke"
+                  pathLength="1"
+                  class="lm-chart-line"
+                />
+                <circle
+                  cx={leaderView.chart.last.x}
+                  cy={leaderView.chart.last.y}
+                  r="7"
+                  fill={leaderView.near ? '#FFC247' : '#C6CEDD'}
+                  opacity="0.2"
+                />
+                <circle
+                  cx={leaderView.chart.last.x}
+                  cy={leaderView.chart.last.y}
+                  r="3.5"
+                  fill={leaderView.near ? '#FFC247' : '#C6CEDD'}
+                />
+              </svg>
+              <div class="mt-1.5 flex justify-between text-[11px] text-graphite-400">
+                <span>mín {fmtUSD(leader.low52w ?? 0)}</span>
+                <span>máx {fmtUSD(leader.high52w ?? 0)}</span>
+              </div>
+            </div>
+          )}
+        </article>
+      )}
+
+      <ol class="mt-3 space-y-3">
+        {
+          field.map((c, i) => {
+            const pos = rangePos(c);
+            const tc = termoChart(c);
+            const near = isNearHigh(c);
+            const positive = (c.change1yPct ?? 0) > 0;
+            return (
+              <li class="rounded-2xl border border-graphite-800 bg-graphite-900 p-4 sm:p-5">
+                <div class="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 sm:grid-cols-[10rem_1fr_6rem]">
+                  <div class="min-w-0">
+                    <h3 class="truncate font-display text-sm font-semibold text-graphite-100">
+                      <span class="mr-2 text-[11px] font-normal text-graphite-400">{String(i + 2).padStart(2, '0')}</span>
+                      {c.name}
+                    </h3>
+                    <p class="truncate text-[11px] text-graphite-400">
+                      {c.ticker} · {c.metal}
+                    </p>
+                  </div>
+                  {pos != null && tc ? (
+                    <div class="col-span-2 sm:col-span-1">
+                      <svg
+                        viewBox={`0 0 ${TW} ${TH}`}
+                        preserveAspectRatio="none"
+                        class="h-12 w-full"
+                        role="img"
+                        aria-label={`${c.name}: recorrido de los últimos 12 meses; hoy a ${Math.round(pos * 100)}% de su rango de 52 semanas.`}
+                      >
+                        <defs>
+                          <linearGradient id={`grad-termo-${c.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop
+                              offset="0%"
+                              stop-color={near ? '#FFC247' : '#C6CEDD'}
+                              stop-opacity={near ? '0.18' : '0.14'}
+                            />
+                            <stop offset="100%" stop-color={near ? '#FFC247' : '#C6CEDD'} stop-opacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <polygon points={tc.area} fill={`url(#grad-termo-${c.id})`} />
+                        <polyline
+                          points={tc.poly}
+                          fill="none"
+                          stroke="#C6CEDD"
+                          stroke-width="1.75"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          vector-effect="non-scaling-stroke"
+                        />
+                        <circle cx={tc.last.x} cy={tc.last.y} r="5.5" fill={near ? '#FFC247' : '#C6CEDD'} opacity="0.2" />
+                        <circle cx={tc.last.x} cy={tc.last.y} r="3" fill={near ? '#FFC247' : '#C6CEDD'} />
+                      </svg>
+                      <div class="mt-1 flex justify-between text-[10px] text-graphite-400">
+                        <span>mín {fmtUSD(c.low52w ?? 0)}</span>
+                        <span>máx {fmtUSD(c.high52w ?? 0)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div class="col-span-2 sm:col-span-1" />
+                  )}
+                  <p
+                    class:list={[
+                      'font-display text-xl font-semibold tabular-nums sm:text-right',
+                      positive ? 'text-graphite-100' : 'text-graphite-300',
+                    ]}
+                  >
+                    {signedPct(c.change1yPct)}%
+                  </p>
+                </div>
+              </li>
+            );
+          })
+        }
+      </ol>
+    </div>
+
+    {/* 2 · La caída desde la cima — cuánto bajó cada acción de su máximo */}
+    <div class="reveal mt-24 md:mt-36">
+      <h2 class="font-display text-2xl font-semibold text-graphite-100 sm:text-3xl">
+        <Fragment set:html={t('bolsa.caida.title') + ' ' + infoTip(TOOLTIP_LABEL)} />
+      </h2>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-graphite-400">{t('bolsa.caida.desc')}</p>
+
+      <div class="mt-8 overflow-hidden rounded-2xl border border-graphite-800 bg-graphite-900 p-4 sm:p-5">
+        <ol class="space-y-2.5">
+          {
+            drawdownSorted.map((c) => {
+              const dd = drawdownPct(c)!;
+              return (
+                <li class="flex items-center gap-3">
+                  <span class="w-24 shrink-0 truncate text-xs font-medium text-graphite-200 sm:w-32">{c.name}</span>
+                  <div
+                    class="relative h-3.5 grow rounded-r-full bg-graphite-800"
+                    role="img"
+                    aria-label={`${c.name}: ${signedPct(dd)}% desde su máximo del año`}
+                  >
+                    <div
+                      class:list={[
+                        'absolute inset-y-0 left-0 rounded-r-full bg-gradient-to-r',
+                        isNearHigh(c) ? 'from-brand-500/80 to-brand-400/40' : 'from-graphite-600 to-graphite-400',
+                      ]}
+                      style={`width:${Math.max(2, barW(c))}%`}
+                    />
+                    <span class="absolute inset-y-0 right-0 w-px bg-graphite-400" aria-hidden="true" />
+                  </div>
+                  <span class="w-14 shrink-0 text-right text-xs tabular-nums text-graphite-300">{signedPct(dd)}%</span>
+                </li>
+              );
+            })
+          }
+        </ol>
+        <p class="mt-4 border-t border-graphite-800 pt-3 text-[11px] text-graphite-400">
+          La marca de la derecha es la cima del año. Cuanto más corta la barra, más cerca está la acción de su mejor momento.
+        </p>
+      </div>
+    </div>
+
+    {/* 3 · El mejor y el peor mes — una sola escala compartida entre las 12 */}
+    <div class="reveal mt-24 md:mt-36">
+      <h2 class="font-display text-2xl font-semibold text-graphite-100 sm:text-3xl">
+        <Fragment set:html={t('bolsa.meses.title') + ' ' + infoTip(TOOLTIP_LABEL)} />
+      </h2>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-graphite-400">{t('bolsa.meses.desc')}</p>
+
+      <div class="mt-8 overflow-hidden rounded-2xl border border-graphite-800 bg-graphite-900 p-4 sm:p-5">
+        <ol class="space-y-3">
+          {
+            mesesRows.map(([c, ex]) => (
+              <li class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 sm:grid-cols-[10rem_minmax(0,1fr)_11rem] sm:gap-y-0">
+                <h3 class="min-w-0 truncate text-xs font-medium text-graphite-200">{c.name}</h3>
+                <div class="justify-self-end sm:col-start-3 sm:row-start-1 sm:text-right">
+                  <p class="whitespace-nowrap text-xs font-medium tabular-nums text-brand-400">
+                    <span class="text-graphite-400">{monthLabelOf(ex!.best.index)} </span>{signedPct(ex!.best.pct)}%
+                  </p>
+                  <p class="mt-0.5 whitespace-nowrap text-xs tabular-nums text-graphite-300">
+                    <span class="text-graphite-400">{monthLabelOf(ex!.worst.index)} </span>{signedPct(ex!.worst.pct)}%
+                  </p>
+                </div>
+                <div class="relative col-span-2 h-9 sm:col-span-1 sm:col-start-2 sm:row-start-1" aria-hidden="true">
+                  <div class="absolute inset-x-0 top-1/2 border-t border-dashed border-graphite-600/80" />
+                  <div
+                    class:list={[
+                      'absolute left-[35%] w-3.5 -translate-x-1/2 rounded-[3px] bg-brand-400',
+                      ex!.best.pct >= 0 ? 'bottom-1/2' : 'top-1/2',
+                    ]}
+                    style={`height:${mesBarH(ex!.best.pct)}px`}
+                  />
+                  <div
+                    class:list={[
+                      'absolute left-[65%] w-3.5 -translate-x-1/2 rounded-[3px] bg-graphite-600',
+                      ex!.worst.pct >= 0 ? 'bottom-1/2' : 'top-1/2',
+                    ]}
+                    style={`height:${mesBarH(ex!.worst.pct)}px`}
+                  />
+                </div>
+              </li>
+            ))
+          }
+        </ol>
+        {
+          mesesSinSerie.length > 0 && (
+            <ol class="mt-4 space-y-2.5 border-t border-graphite-800 pt-3">
+              {mesesSinSerie.map((c) => (
+                <li class="flex items-center justify-between gap-3">
+                  <span class="min-w-0 truncate text-xs font-medium text-graphite-200">{c.name}</span>
+                  <span class="rounded-full border border-graphite-600 bg-graphite-850 px-2.5 py-1 text-[11px] font-medium text-graphite-300">
+                    serie insuficiente
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )
+        }
+        <p class="mt-4 border-t border-graphite-800 pt-3 text-[11px] text-graphite-400">{t('bolsa.meses.nota')}</p>
+      </div>
+    </div>
+
+    {/* 4 · Los metales que mueven todo — una tarjeta ancha, eje de meses común */}
+    {
+      hasMetales && (
+        <div class="reveal mt-24 md:mt-36">
+          <h2 class="font-display text-2xl font-semibold text-graphite-100 sm:text-3xl">
+            <Fragment set:html={t('bolsa.metales.title') + ' ' + infoTip(TOOLTIP_LABEL)} />
+          </h2>
+          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-graphite-400">{t('bolsa.metales.desc')}</p>
+
+          <article class="mt-8 rounded-2xl border border-graphite-800 bg-graphite-900 p-4 sm:p-6">
+            <div class="grid gap-8 sm:grid-cols-2 sm:gap-10">
+              {metalCharts.map(({ id, title, yoy, chart, lastDate }) =>
+                chart ? (
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <h3 class="font-display text-sm font-semibold text-graphite-100">{title}</h3>
+                      <span class="text-[11px] text-graphite-400">{fmtDay(lastDate)}</span>
+                    </div>
+                    <div class="mt-2 flex items-baseline gap-2">
+                      <p class="font-display text-3xl font-semibold text-brand-400">{signedPct(yoy)}%</p>
+                      <p class="text-[11px] text-graphite-400">{t('stocks.year')}</p>
+                    </div>
+                    <svg
+                      viewBox={`0 0 ${MW} ${MH}`}
+                      preserveAspectRatio="none"
+                      class="mt-3 h-24 w-full sm:h-28"
+                      role="img"
+                      aria-label={`${title}: ${signedPct(yoy)}% en el año.`}
+                    >
+                      <defs>
+                        <linearGradient id={`grad-metales-${id}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#FFC247" stop-opacity="0.28" />
+                          <stop offset="100%" stop-color="#FFC247" stop-opacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <line
+                        x1={MPAD}
+                        x2={MW - MPAD}
+                        y1={chart.first.y}
+                        y2={chart.first.y}
+                        stroke="#3a4356"
+                        stroke-width="1"
+                        stroke-dasharray="3 4"
+                        vector-effect="non-scaling-stroke"
+                      />
+                      <polygon points={chart.area} fill={`url(#grad-metales-${id})`} />
+                      <polyline
+                        points={chart.poly}
+                        fill="none"
+                        stroke="#C6CEDD"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        vector-effect="non-scaling-stroke"
+                      />
+                      <circle cx={chart.last.x} cy={chart.last.y} r="7" fill="#FFC247" opacity="0.16" />
+                      <circle cx={chart.last.x} cy={chart.last.y} r="3.5" fill="#FFC247" />
+                    </svg>
+                  </div>
+                ) : null
+              )}
+            </div>
+            {metalTicks ? (
+              <div class="mt-3 flex justify-between border-t border-graphite-800 pt-2 text-[10px] text-graphite-400">
+                {metalTicks.map(({ label }) => (
+                  <span>{label}</span>
+                ))}
+              </div>
+            ) : null}
+          </article>
+        </div>
+      )
+    }
+
+    {/* Glosario: la ayuda de jerga vive junto a la tabla, donde se acumula */}
+    <details class="group mt-16 rounded-2xl border border-graphite-800 bg-graphite-900 p-5 sm:mt-24 md:mt-32 [&_summary::-webkit-details-marker]:hidden">
+      <summary class="flex cursor-pointer items-center justify-between gap-4 font-display text-base font-semibold text-graphite-100">
+        {t('bolsa.glosario.title')}
+        <span class="shrink-0 text-brand-400 transition-transform group-open:rotate-45" aria-hidden="true">+</span>
+      </summary>
+      <ul class="mt-4 grid gap-3 text-sm leading-relaxed text-graphite-300 sm:grid-cols-2">
+        {(['accion', 'variacion', 'rango', 'maximo', 'adr'] as const).map((k) => (
+          <li class="rounded-xl border border-graphite-800 bg-graphite-850 p-4">{t(`bolsa.glosario.${k}`)}</li>
+        ))}
+      </ul>
+    </details>
+
+    {/* 5 · Las 12 de un vistazo — tabla ordenable */}
+    <div class="reveal mt-16 md:mt-24">
+      <h2 class="font-display text-2xl font-semibold text-graphite-100 sm:text-3xl">{t('bolsa.tabla.title', { n: total })}</h2>
+      <p class="mt-3 max-w-2xl text-sm leading-relaxed text-graphite-400">
+        El nombre de cada minera te lleva a sus empleos filtrados en Labormin.
+      </p>
+
+      <div class="mt-8 overflow-x-auto rounded-2xl border border-graphite-800 bg-graphite-900">
+        <table id="bolsa-table" class="w-full min-w-[43rem] border-collapse text-left text-sm">
+          <thead>
+            <tr class="border-b border-graphite-800 text-[11px] uppercase tracking-widest text-graphite-400">
+              <th scope="col" data-key="name" aria-sort="none" class="px-4 py-3 font-semibold">
+                <button type="button" class="rounded-sm inline-flex items-center gap-1.5 uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-900 focus-visible:text-brand-400">
+                  {t('bolsa.tabla.empresa')}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" class="sort-arrow">
+                    <path d="M5 1.5 8.5 6h-7L5 1.5Z" fill="currentColor" />
+                  </svg>
+                </button>
+              </th>
+              <th scope="col" class="px-4 py-3 font-semibold">{t('bolsa.tabla.metal')}</th>
+              <th scope="col" data-key="change" aria-sort="descending" class="px-4 py-3 font-semibold">
+                <button type="button" class="rounded-sm inline-flex items-center gap-1.5 uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-900 focus-visible:text-brand-400">
+                  {t('bolsa.tabla.ano')}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" class="sort-arrow">
+                    <path d="M5 1.5 8.5 6h-7L5 1.5Z" fill="currentColor" />
+                  </svg>
+                </button>
+              </th>
+              <th scope="col" data-key="price" aria-sort="none" class="px-4 py-3 font-semibold">
+                <button type="button" class="rounded-sm inline-flex items-center gap-1.5 uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-graphite-900 focus-visible:text-brand-400">
+                  {t('bolsa.tabla.precio')}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" class="sort-arrow">
+                    <path d="M5 1.5 8.5 6h-7L5 1.5Z" fill="currentColor" />
+                  </svg>
+                </button>
+              </th>
+              <th scope="col" class="hidden px-4 py-3 font-semibold md:table-cell">{t('bolsa.tabla.rango')}</th>
+              <th scope="col" class="hidden px-4 py-3 font-semibold md:table-cell">{t('bolsa.tabla.minas')}</th>
+            </tr>
+          </thead>
+          <tbody id="bolsa-tbody">
+            {
+              tableRows.map((c) => {
+                const pos = rangePos(c);
+                const near = isNearHigh(c);
+                const change = signedPct(c.change1yPct);
+                const positive = (c.change1yPct ?? 0) > 0;
+                return (
+                  <tr
+                    class="border-t border-graphite-800/70 align-middle hover:bg-graphite-850/60"
+                    data-name={c.name}
+                    data-change={c.change1yPct ?? Number.NEGATIVE_INFINITY}
+                    data-price={c.price}
+                  >
+                    <td class="px-4 py-3">
+                      <a
+                        href={`/jobs?q=${encodeURIComponent(c.name)}`}
+                        class="font-display text-sm font-semibold text-graphite-100 underline decoration-graphite-600 decoration-1 underline-offset-2 transition-colors hover:text-brand-400 hover:decoration-brand-400"
+                      >
+                        {c.name}
+                      </a>
+                      <span class="ml-2 text-[11px] text-graphite-400">{c.ticker}</span>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-graphite-300">{c.metal}</td>
+                    <td class="px-4 py-3">
+                      <span
+                        class:list={[
+                          'rounded-full border px-2.5 py-1 text-[11px] font-medium tabular-nums',
+                          positive
+                            ? 'border-brand-600/60 bg-brand-500/10 text-brand-400'
+                            : 'border-graphite-600 bg-graphite-850 text-graphite-300',
+                        ]}
+                      >
+                        {change}%
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm tabular-nums text-graphite-100">{fmtUSD(c.price)}</td>
+                    <td class="hidden px-4 py-3 md:table-cell">
+                      {pos != null && (
+                        <div class="relative h-1.5 w-28 rounded-full bg-graphite-800" aria-hidden="true">
+                          <span
+                            class:list={[
+                              'absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full border-2 border-graphite-900',
+                              near ? 'bg-brand-400' : 'bg-graphite-100',
+                            ]}
+                            style={`left:${Math.round(pos * 100)}%`}
+                          />
+                        </div>
+                      )}
+                    </td>
+                    <td class="hidden max-w-[16rem] px-4 py-3 text-xs leading-snug text-graphite-400 md:table-cell">{c.mines}</td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-6 text-[11px] leading-snug text-graphite-400">
+        {t('pulse.fuente')}: <a
+          href={stocks.source.officialUrl}
+          target="_blank"
+          rel="noopener nofollow"
+          class="text-graphite-200 transition-colors hover:text-brand-400">{stocks.source.name}</a
+        > · {t('pulse.verificado', { date: fmtDay(stocks.source.lastVerifiedAt) })} · {t('bolsa.disclaimer')}
+      </p>
+    </div>
+  </section>
+
+  <AdSlot
+    slotId="bolsa-side-2"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+</div>
+
+<div class="pb-4">
+  <AdSlot
+    slotId="bolsa-bottom-desktop-1"
+    size={{ w: 970, h: 90 }}
+    media="(min-width: 1024px)"
+    locale={locale}
+    class="mx-auto w-fit hidden lg:block"
+  />
+  <AdSlot
+    slotId="bolsa-bottom-mobile-1"
+    size={{ w: 320, h: 100 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+</div>
+
+<script>
+  const table = document.getElementById('bolsa-table') as HTMLTableElement;
+  const tbody = document.getElementById('bolsa-tbody')!;
+  const headers = Array.from(table.querySelectorAll<HTMLTableCellElement>('th[data-key]'));
+
+  function sortRows(key: string, dir: 'ascending' | 'descending') {
+    const rows = Array.from(tbody.querySelectorAll<HTMLTableRowElement>('tr'));
+    const sign = dir === 'ascending' ? 1 : -1;
+    rows.sort((a, b) => {
+      const va = a.dataset[key]!;
+      const vb = b.dataset[key]!;
+      if (key === 'name') return sign * va.localeCompare(vb, 'es');
+      return sign * (Number(va) - Number(vb));
+    });
+    for (const r of rows) tbody.append(r);
+    headers.forEach((h) => h.setAttribute('aria-sort', h.dataset.key === key ? dir : 'none'));
+  }
+
+  headers.forEach((h) => {
+    h.querySelector('button')?.addEventListener('click', () => {
+      const key = h.dataset.key!;
+      const current = h.getAttribute('aria-sort');
+      const dir: 'ascending' | 'descending' =
+        current === 'descending' ? 'ascending' : 'descending';
+      sortRows(key, dir);
+    });
+  });
+</script>

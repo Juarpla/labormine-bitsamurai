@@ -91,20 +91,20 @@ already running on localhost:4321-4326; otherwise it starts (and stops) its own.
 
 ```
 scripts/ingest.mjs            job ingestion (write jobs.json; +title translations; --prune niche filter)
+scripts/ingest-stocks.mjs     stock quotes ingestion (write stocks.json; Yahoo Finance + FX → USD; monthly CI)
 src/data/companies.json       curated public boards (extend here to add companies — niche: PE/CL/CA/US/AU)
 src/data/pathways.json        curated visa pathways seed (Peru-eligible focus)
 src/data/events.json          hand-curated mining events seed (officialUrl + lastVerifiedAt required)
 src/data/jobs.json            generated feed (commit; refreshed daily by CI; niche-filtered)
 src/data/translation-cache.json  auto-translated titles cache (commit)
-src/data/linkedin-company-ids.json  optional LinkedIn numeric company ids (kaix upgrade path)
 src/schemas.ts                Zod schemas for Job / Pathway / Event / feeds
 src/lib/jobs.ts               build-time data helpers (tierOf, tier ranking)
 src/lib/events.ts             build-time event helpers (upcoming)
 src/lib/llm.js               multi-provider LLM chain (titles + clear view)
 src/lib/i18n.ts               localePath, niche countries, DEFAULT_COUNTRY/DEFAULT_NATIONALITY
 src/i18n/ui.ts                UI dictionary (es active; en/pt dormant)
-src/components/pages/*.astro  page views (HomeView, JobsView, JobDetailView, PathwaysView, EventsView)
-src/pages/                    routes: /, /jobs, /visa-pathways, /eventos, /guias(+2 guías), /faq,
+src/components/pages/*.astro  page views (HomeView, JobsView, JobDetailView, PathwaysView, EventsView, BolsaView)
+src/pages/                    routes: /, /jobs, /bolsa, /visa-pathways, /eventos, /guias(+2 guías), /faq,
                               /about, /contact, /privacy, /terms, /ops, /api/translate-description
 docs/ADSENSE-CHECKLIST.md     AdSense admission checklist (owner + code states)
 PRODUCT.md                    durable product truth (impeccable init)
@@ -126,15 +126,17 @@ PRODUCT.md                    durable product truth (impeccable init)
   are shown only with a reported-visa or international-candidate signal.
 - Ads: `AdSlot` slot ids are per page/section (`home-*`; jobs: `jobs-top-1`,
   `jobs-side-1/2`, `jobs-bottom-desktop-1`, `jobs-bottom-mobile-1`;
-  `job-detail-1`; pathways: `pathways-top-1`, `pathways-side-1/2`,
+  `job-detail-1`, `job-detail-2` (before "Empleos similares"); pathways: `pathways-top-1`, `pathways-side-1/2`,
   `pathways-bottom-desktop-1`, `pathways-bottom-mobile-1`; events: `events-top-1`,
   `events-side-1/2`, `events-bottom-desktop-1`, `events-bottom-mobile-1`;
   guías (shared by index + detail pages): `guias-top-1`, `guias-side-1/2`,
-  `guias-bottom-desktop-1`, `guias-bottom-mobile-1`; about: `about-bottom-desktop-1`,
-  `about-bottom-mobile-1`). /jobs, /visa-pathways, /eventos and /guias share the
+  `guias-bottom-desktop-1`, `guias-bottom-mobile-1`; bolsa: `bolsa-top-1`,
+  `bolsa-side-1/2`, `bolsa-bottom-desktop-1`, `bolsa-bottom-mobile-1`;
+  faq: `faq-bottom-desktop-1`, `faq-bottom-mobile-1`; about: `about-bottom-desktop-1`,
+  `about-bottom-mobile-1`). /jobs, /bolsa, /visa-pathways, /eventos and /guias share the
   same always-on distribution: fixed 320×50 top (mobile/tablet), 970×90 bottom
   (desktop ≥lg) or 320×100 (mobile/tablet), sticky 160×600 side rails (desktop
-  ≥1280px) around a centered content column; /about carries only the horizontal
+  ≥1280px) around a centered content column; /faq and /about carry only the horizontal
   bottom pair, no rails. Slots sit outside the filterable grid and are never
   hidden after serving. Placeholders render in dev/absent client id; real ads
   need `PUBLIC_ADSENSE_CLIENT` + prod + publisher ID in `public/ads.txt` (see

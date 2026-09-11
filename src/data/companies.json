@@ -1,5 +1,5 @@
 {
-  "_comment": "Curated, verified public job sources for mining companies and boards. Every entry must resolve to a real, public, keyless feed or page. Platforms: greenhouse | lever (boards); arbeitnow | remotive (generic); adzuna (optional keyed); direct[] platforms: scc-capper | hiringroom | sapsf-csb | oracle-hcm | pageup | jobiqo | brunel | globe247 | camining | jobbank | computrabajo | navent | smartrecruiters | taleo-rss | empleosmineros; apify actors (optional keyed via APIFY_TOKEN): linkedin | indeed | seek | glassdoor. Nicho (owner decisions 2026-09-10): solo PE/CL/CA/US/AU — fuentes de un solo país fuera del nicho (PNet-ZA, Computrabajo-MX, Vale-BR) fueron retiradas. Sources are scraped read-only, respecting robots.txt and crawl-delays. See ARCHITECTURE.md §3.",
+  "_comment": "Curated, verified public job sources for mining companies and boards. Every entry must resolve to a real, public, keyless feed or page. Platforms: greenhouse | lever (boards); arbeitnow | remotive (generic); adzuna (optional keyed); direct[] platforms: scc-capper | hiringroom | sapsf-csb | oracle-hcm | pageup | jobiqo | brunel | globe247 | camining | jobbank | computrabajo | navent | smartrecruiters | taleo-rss | empleosmineros | radancy | gupy; apify actors (optional keyed via APIFY_TOKEN): linkedin | indeed | seek. Nicho (owner decisions 2026-09-10): solo PE/CL/CA/US/AU — fuentes de un solo país fuera del nicho (PNet-ZA, Computrabajo-MX, Vale-BR) fueron retiradas. Sources are scraped read-only, respecting robots.txt and crawl-delays. See ARCHITECTURE.md §3.",
   "maxPerSource": 1500,
   "boards": [
     { "name": "KoBold Metals", "platform": "greenhouse", "slug": "koboldmetals", "hq": "US" },
@@ -36,6 +36,9 @@
     { "name": "Woodside", "platform": "sapsf-csb", "url": "https://careers.woodside.com.au", "sitemap": "https://careers.woodside.com.au/sitemap.xml", "company": "Woodside", "ua": "browser" },
     { "name": "Teck", "platform": "sapsf-csb", "url": "https://jobs.teck.com", "sitemap": "https://jobs.teck.com/sitemap.xml", "company": "Teck", "ua": "browser" },
     { "name": "Kinross Gold", "platform": "sapsf-csb", "url": "https://jobs.kinross.com", "sitemap": "https://jobs.kinross.com/sitemap.xml", "company": "Kinross Gold", "ua": "browser" },
+    { "name": "Buenaventura (ATS oficial)", "platform": "sapsf-csb", "url": "https://trabajaconnosotros.buenaventura.pe", "sitemap": "https://trabajaconnosotros.buenaventura.pe/sitemap.xml", "company": "Compañía de Minas Buenaventura", "country": "PE", "ua": "browser", "note": "Cubre Shila, El Brocal y demás unidades. Sitemap CSB + microdata por página; solo 9 avisos activos a 2026-09-11." },
+
+    { "name": "Nexa Perú (El Porvenir / Atacocha / Cerro Lindo)", "platform": "gupy", "url": "https://venparanexa.gupy.io", "sitemap": "https://job-boards.api.gupy.io/production/job-board-content?jobBoardName=google&subdomain=venparanexa", "company": "Nexa Resources", "country": "PE", "ua": "browser", "note": "Gupy ATS oficial de Nexa (Grupo Votorantim). Sitemap de Google-for-Jobs listado en robots.txt (scraping permitido); jobIds en base64 + JSON-LD por página." },
 
     { "name": "The Redpath Group", "platform": "oracle-hcm", "host": "https://fa-evvx-saasfaprod1.fa.ocs.oraclecloud.com", "siteNumber": "CX_1", "siteSlug": "The-Redpath-Group", "company": "The Redpath Group", "ua": "browser" },
     { "name": "Barrick Gold", "platform": "oracle-hcm", "host": "https://ehkn.fa.ca2.oraclecloud.com", "siteNumber": "CX_1001", "siteSlug": "CX_1001", "publicBase": "https://jobs.barrick.com", "company": "Barrick Gold", "ua": "browser" },
@@ -50,13 +53,18 @@
 
     { "name": "Job Bank Canadá", "platform": "jobbank", "url": "https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=mining&sort=M&fglo=1", "company": "Job Bank", "country": "CA", "delayMs": 5000, "ua": "browser", "note": "sort=M + fglo=1 = filtro oficial de candidatos internacionales (el usuario la definió así): los avisos se marcan openToInternational=true." },
 
-    { "name": "Computrabajo Perú", "platform": "computrabajo", "url": "https://pe.computrabajo.com/trabajo-de-mineria", "company": "Computrabajo", "country": "PE", "cap": 200, "ua": "browser" },
-    { "name": "Computrabajo Chile", "platform": "computrabajo", "url": "https://cl.computrabajo.com/trabajo-de-mineria", "company": "Computrabajo", "country": "CL", "cap": 200, "ua": "browser" },
+    { "name": "Computrabajo Perú", "platform": "computrabajo", "url": "https://pe.computrabajo.com/trabajo-de-mineria", "keywords": ["mineria", "minero"], "company": "Computrabajo", "country": "PE", "cap": 200, "ua": "browser" },
+    { "name": "Computrabajo Chile", "platform": "computrabajo", "url": "https://cl.computrabajo.com/trabajo-de-mineria", "keywords": ["mineria", "minero"], "company": "Computrabajo", "country": "CL", "cap": 200, "ua": "browser" },
 
     { "name": "Bumeran Perú", "platform": "navent", "host": "https://www.bumeran.com.pe", "siteId": "BMPE", "company": "Bumeran Perú", "country": "PE", "ua": "browser" },
     { "name": "Laborum Chile", "platform": "navent", "host": "https://www.laborum.cl", "siteId": "BMCL", "company": "Laborum", "country": "CL", "ua": "browser" },
 
     { "name": "Anglo American", "platform": "smartrecruiters", "companyId": "AngloAmericanDeBeersGroup", "company": "Anglo American", "ua": "browser" },
+    { "name": "Hudbay Perú (Constancia)", "platform": "navent", "host": "https://www.bumeran.com.pe", "siteId": "BMPE", "company": "Hudbay Perú", "country": "PE", "query": "hudbay", "empresaId": 10097690, "ua": "browser", "note": "Canal oficial de Perú de Hudbay: la propia ATS de Hudbay enlaza aquí para sus empleos en Perú. empresaId acota por empresa → el gate MINING_RE se omite (texto en español)." },
+    { "name": "Hudbay (ATS oficial)", "platform": "radancy", "url": "https://careers.hudbayminerals.com", "sitemap": "https://careers.hudbayminerals.com/sitemap.xml", "company": "Hudbay", "delayMs": 5000, "ua": "browser", "note": "ATS Radancy: hoy solo Canadá (0 empleos PE a 2026-09-11). El handler emite solo avisos PE (tier 1); el resto se descarta (inNiche los dropearía igualmente sin señal de visa)." },
+    { "name": "Consorcio Minero Horizonte (Bumeran)", "platform": "navent", "host": "https://www.bumeran.com.pe", "siteId": "BMPE", "company": "Consorcio Minero Horizonte", "country": "PE", "query": "horizonte", "empresaId": 2266480, "ua": "browser", "note": "Perfil oficial de Bumeran (empresa_consorcio-minero-horizonte-s.a._2266480): empresaId acota por empresa → gate MINING_RE omitido (texto en español)." },
+    { "name": "Buenaventura / El Brocal (Bumeran)", "platform": "navent", "host": "https://www.bumeran.com.pe", "siteId": "BMPE", "company": "Compañía de Minas Buenaventura", "country": "PE", "query": "buenaventura", "empresaId": 1572140, "ua": "browser", "note": "Perfil de la matriz en Bumeran (empresa_compania-de-minas-buenaventura_1572140); canal de El Brocal en el board. Duplicado con el ATS se resuelve por dedupe nv-BMPE-<id>." },
+    { "name": "Volcan (Bumeran)", "platform": "navent", "host": "https://www.bumeran.com.pe", "siteId": "BMPE", "company": "Volcan Compañía Minera", "country": "PE", "query": "volcan", "empresaId": 2151100, "ua": "browser", "note": "Perfil oficial de Bumeran (empresa_volcan-compania-minera-s.a.a._2151100): empresaId acota por empresa → gate MINING_RE omitido (texto en español)." },
     { "name": "Agnico Eagle", "platform": "taleo-rss", "url": "https://agnicoeagle.taleo.net/careersection/feed/joblist.rss?lang=en&portal=101430233&searchtype=3&f=null&s=3%7CD&a=null&multiline=false", "company": "Agnico Eagle", "ua": "browser" },
 
     { "name": "EmpleosMineros.cl", "platform": "empleosmineros", "url": "https://empleosmineros.cl/api/empleos", "company": "EmpleosMineros.cl", "country": "CL", "ua": "browser" }
@@ -64,21 +72,14 @@
   "linkedin": {
     "platform": "apify-linkedin",
     "actor": "kaix~linkedin-jobs-scraper",
-    "fallbackActor": "cheap_scraper~linkedin-job-scraper",
-    "idsFile": "src/data/linkedin-company-ids.json",
-    "cap": 170,
-    "_comment": "Enabled when APIFY_TOKEN is set. Top 50 MINING.COM (data 2026-08-31) as the reference seed of legal mining companies — not an exhaustive limit. Fetched via Apify guest-mode actors (no LinkedIn account involved). Cost guard: cheap_scraper bills ~$0.70/1k results → cap 170/run, Mon/Wed/Fri/Sun (17 runs/mo) ≈ $2.06/mo fits the Free plan ($5 credits) alongside indeed/seek/glassdoor. With company IDs in linkedin-company-ids.json, kaix (~$0.10/1k) fits cap 1000 in the same free tier.",
-    "companies": [
-      "BHP", "Rio Tinto", "Southern Copper Corporation", "Zijin Mining", "Newmont Corporation",
-      "Freeport-McMoRan", "Agnico Eagle Mines", "Glencore", "Barrick Gold", "Wheaton Precious Metals",
-      "Ma'aden", "Vale", "Anglo American", "CMOC Group", "AngloGold Ashanti",
-      "Antofagasta Minerals", "Franco-Nevada", "Cameco", "Gold Fields", "Fortescue Metals Group",
-      "Kinross Gold", "Nutrien", "Teck Resources", "Fresnillo plc", "First Quantum Minerals",
-      "Hindustan Zinc", "Northern Star Resources", "Shandong Gold", "Norilsk Nickel", "Evolution Mining",
-      "Lundin Mining", "SQM", "Valterra Platinum", "Royal Gold", "Managem",
-      "Jiangxi Copper", "China Northern Rare Earth", "Pan American Silver", "Coeur Mining", "Kazatomprom",
-      "Zhongjin Gold", "KGHM", "Amman Mineral", "Lundin Gold", "South32",
-      "Boliden", "Polyus", "Albemarle", "Ganfeng Lithium", "MMG"
+    "cap": 100,
+    "datePosted": "past_week",
+    "_comment": "Enabled when APIFY_TOKEN is set. Keyword+location search via kaix (LinkedIn public guest API, no account). One actor run per market×keyword; markets run in array order (priority) and each query gets the remaining budget, so PE fills first. Cap 100 is the TOTAL per-run budget. Runs Mon/Wed/Fri (13 runs/mo) → ceiling ≈ $0.13/mo at $0.09–0.10/1k; fetchDetails: true may add detail events (verify on the first invoice). Replaces the 50-company seed (cheap_scraper billed ~$0.70/1k with a 150-rows/run minimum).",
+    "markets": [
+      { "country": "PE", "keywords": ["minería", "mining"], "location": "Peru" },
+      { "country": "CL", "keywords": ["minería", "mining"], "location": "Chile" },
+      { "country": "CA", "keywords": ["mining"], "location": "Canada" },
+      { "country": "US", "keywords": ["mining"], "location": "United States" }
     ]
   },
   "indeed": {
@@ -98,17 +99,10 @@
   "seek": {
     "platform": "apify-seek",
     "actor": "epicscrapers~seek-job-scraper",
-    "cap": 200,
+    "cap": 50,
     "daterange": 14,
     "keywords": "mining",
     "where": "All Australia",
-    "_comment": "Enabled when APIFY_TOKEN is set. epicscrapers bills $0.50/1k results. cap 200 = pageSize 100 × maxPages 2. Seek is AU-only by design (national search). Runs Sat+Tue → ceiling ≈ $0.87/mo (Free plan)."
-  },
-  "glassdoor": {
-    "platform": "apify-glassdoor",
-    "actor": "blackfalcondata~glassdoor-job-scraper",
-    "cap": 100,
-    "postedDays": 14,
-    "_comment": "Enabled when APIFY_TOKEN is set. blackfalcondata bills $0.29/1k results + $0.001/run start. Cap 100 is the TOTAL budget per run across markets, filled in array order. Only CA/US/AU: Glassdoor's 21 markets have no South Africa site (za queries are impossible, not skipped). Runs Wed+Sun → ceiling ≈ $0.26/mo (Free plan)."
+    "_comment": "Enabled when APIFY_TOKEN is set. epicscrapers bills $0.50/1k results. cap 50 = pageSize 50 × maxPages 1. Seek is AU-only by design (national search). Runs Sat+Tue → ceiling ≈ $0.22/mo (Free plan)."
   }
 }

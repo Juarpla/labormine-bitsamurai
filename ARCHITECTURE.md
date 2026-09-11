@@ -143,7 +143,7 @@ UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 | Globe 24-7 | `globe247` | WP Job Manager list + JSON-LD detail |
 | CA Mining | `camining` | Simple Job Board sitemap + HTML (mining filter; beware lookalike domain `caming.com` = pharma) |
 | Job Bank Canada | `jobbank` | Government SSR; query `sort=M&fglo=1` (official international-candidates filter) → rows marked `openToInternational: true`; Crawl-delay 5s; expired postings skipped |
-| Computrabajo (PE/CL) | `computrabajo` | SSR list (`-pN`) + JSON-LD JobPosting detail |
+| Computrabajo (PE/CL) | `computrabajo` | SSR list (`-pN`) + JSON-LD JobPosting detail; keyword pages `mineria` + `minero` per country |
 | Bumeran Perú, Laborum Chile | `navent` | **Keyless JSON `POST /api/avisos/searchV2`** with `x-site-id` + sitemap URL resolution. Undocumented API (documented exception); sitemap is the robots-clean fallback channel |
 | EmpleosMineros.cl | `empleosmineros` | Keyless JSON API (low volume, low quality) |
 
@@ -153,24 +153,25 @@ UAs), and respects `robots.txt` and per-site crawl-delays. Config lives in
 | --- | --- | --- |
 | Arbeitnow, Remotive, RemoteOK | generic | mining-keyword filtered; RemoteOK added 2026-09-10 to reinforce the remote tier |
 | Adzuna | `optionalKeyed` | **nicho: PE/CL/CA/US/AU only**; runs LAST so official sources win dedupe |
-| LinkedIn (top-50 MINING.COM seed) | `apify-linkedin` | **Guest-mode Apify actors** (`cheap_scraper` primary by company names; `kaix` cheaper-per-1k upgrade path when numeric company IDs are provided in `src/data/linkedin-company-ids.json`). No LinkedIn account/cookies involved. **Documented exception**: guest scraping of publicly-viewable job pages |
-| Indeed | `apify-indeed` | `factden/indeed-jobs-scraper`, pay-per-result. Markets in priority order **PE → CL → CA → US → AU** (keywords `minería`+`mining` in PE/CL); cap 100 is the **total per-run budget** and each query gets the remaining budget, so PE/CL fill first. Country = search scope. Runs Tue+Thu |
-| Seek (AU) | `apify-seek` | `epicscrapers/seek-job-scraper`, AU national keyword search. Search-result fields only (teaser + bullets, verbatim); URL built from the listing's own `roleId`/`id`. Runs Sat+Tue |
-| Glassdoor (CA/US/AU) | `apify-glassdoor` | `blackfalcondata/glassdoor-job-scraper`, country-scoped keyword search. Only markets that exist on Glassdoor (21 markets — **no South Africa site**). Runs Wed+Sun |
+| LinkedIn (keyword markets) | `apify-linkedin` | `kaix/linkedin-jobs-scraper` — **guest keyword+location search** via the LinkedIn public guest API (no account/cookies). One actor run per market×keyword, markets in priority order **PE → CL → CA → US** (keywords `minería`+`mining` in PE/CL); cap 100 is the **total per-run budget**, each query gets the remaining budget so PE fills first. `fetchDetails: true` keeps descriptions (title translation + description views need them). Replaces the 50-company seed (removed 2026-09-11 with `linkedin-company-ids.json`). Runs Mon/Wed/Fri |
+| Indeed | `apify-indeed` | `factden/indeed-jobs-scraper`, pay-per-result. Markets in priority order **PE → CL → CA → US** (keywords `minería`+`mining` in PE/CL); cap 100 is the **total per-run budget** and each query gets the remaining budget, so PE/CL fill first. Country = search scope. Runs Tue+Thu |
+| Seek (AU) | `apify-seek` | `epicscrapers/seek-job-scraper`, AU national keyword search. Search-result fields only (teaser + bullets, verbatim); URL built from the listing's own `roleId`/`id`. cap 50. Runs Sat+Tue |
+| Glassdoor | — | **removed 2026-09-11** (owner decision): markets overlapped Indeed/Seek and its CA/US/AU-only scope left the niche thin; budget reassigned to LinkedIn keyword markets |
 | LLM chain (titles) | translations | optional; see §7 |
 
 **Marketplace aggregation via Apify — deliberate ToS decision (2026-09-09).** Seek,
-Indeed and Glassdoor prohibit direct scraping and their public APIs are closed, so
-they are ingested **exclusively through guest-mode Apify pay-per-result actors**
-(no accounts, no cookies, public listings only) — the same pattern already
-documented for LinkedIn. Rationale: Labormin links out to the original posting;
-no listing content is altered. Budget guard: all four Apify sources fit the
-Apify **Free plan ($5/mo credits)** with caps of 170 (LinkedIn, Mon/Wed/Fri/Sun),
-100 (Indeed, Tue/Thu), 200 (Seek, Sat+Tue) and 100 (Glassdoor, Wed+Sun) —
-≈ $4.93/mo ceiling. Weekday scheduling via `LM_SOURCES` in `refresh-jobs.yml`.
-Validation gate: if a marketplace returns 0 items consistently for 2 weeks, it is
-disabled in `companies.json` and the actor choice revisited. Pause order if the
-budget tightens: Seek, then Glassdoor.
+Indeed and (until 2026-09-11) Glassdoor prohibit direct scraping and their public
+APIs are closed, so they are ingested **exclusively through guest-mode Apify
+pay-per-result actors** (no accounts, no cookies, public listings only) — the
+same pattern already documented for LinkedIn. Rationale: Labormin links out to
+the original posting; no listing content is altered. Budget guard (2026-09-11
+rebalance): all Apify sources fit the Apify **Free plan ($5/mo credits)** with
+caps of 100 (LinkedIn keyword markets, Mon/Wed/Fri), 100 (Indeed, Tue/Thu) and
+50 (Seek, Sat+Tue) — ≈ $2.10–2.36/mo ceiling. Weekday scheduling via
+`LM_SOURCES` in `refresh-jobs.yml` (Sun = `none`: keyless sources only).
+Validation gate: if a marketplace returns 0 items consistently for 2 weeks, it
+is disabled in `companies.json` and the actor choice revisited. Pause order if
+the budget tightens: Seek, then Indeed.
 
 ### Performance guards
 - `maxPerSource` (default 1500) + per-source `cap` protect `jobs.json` size.
@@ -184,7 +185,7 @@ budget tightens: Seek, then Glassdoor.
   **Antofagasta** (SuccessFactors RKP legacy, session-token JS), **Collahuasi**
   (Imperva WAF) — revisit as a paid Apify wave if ever needed.
 - **Glassdoor ZA, Seek outside AU** — no such market/site exists on those
-  boards; PE/CL marketplace coverage comes from Indeed + LinkedIn company seed.
+  boards; PE/CL marketplace coverage comes from Indeed + LinkedIn keyword markets.
 - **PNet (ZA), Computrabajo MX, Vale (BR)** — removed 2026-09-10: single-country
   sources outside the niche (PE/CL/CA/US/AU).
 - **Minería en Línea** — job board discontinued.
@@ -264,7 +265,7 @@ respect `prefers-reduced-motion`.
 | --- | --- | --- |
 | `PUBLIC_ADSENSE_CLIENT` | no | `ca-pub-…` publisher id; absent → labeled placeholders |
 | `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` | no | enables Adzuna country searches at ingest |
-| `APIFY_TOKEN` | no | enables the Apify sources (`apify-linkedin` / `apify-indeed` / `apify-seek` / `apify-glassdoor`) via guest actors |
+| `APIFY_TOKEN` | no | enables the Apify sources (`apify-linkedin` / `apify-indeed` / `apify-seek`) via guest actors |
 | `LM_SOURCES` | no | CI-only: comma list of Apify platforms to run; derived from the weekday by `refresh-jobs.yml` (empty/unset = run all, e.g. local dev) |
 | `MISTRAL_API_KEY` / `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` / `OPENCODE_GO_API_KEY` | no | multi-provider LLM chain (`src/lib/llm.js`): auto-translates job titles at ingest and powers the on-demand description clear-view API. Failover order via `LLM_PROVIDER_ORDER` (default `MISTRAL_MODEL,WORKERS_AI_MODEL,OPENCODE_GO_MODEL`); models via `MISTRAL_MODEL` (`codestral-2508`) / `WORKERS_AI_MODEL` (`@cf/qwen/qwen3-30b-a3b-fp8`) / `OPENCODE_GO_MODEL` (`mimo-v2.5`); providers without credentials are skipped |
 | `INGEST_FAST` | no | local only: caps every source at N items for fast smoke tests |
@@ -289,7 +290,7 @@ respect `prefers-reduced-motion`.
 1. Apify wave for the excluded boards (Careers24, Antofagasta RKP, Collahuasi) —
    paid actors, deliberate ToS decision required
 2. ~~Indeed pilot in "enrichment" mode~~ — superseded 2026-09-09: Indeed, Seek (AU)
-   and Glassdoor ship as **full-feed** marketplace sources via Apify pay-per-result
+   and (until 2026-09-11) Glassdoor ship as **full-feed** marketplace sources via Apify pay-per-result
    actors (see §3); the deliberate ToS decision is documented there
 3. ~~Full job-description translation~~ — shipped as the on-demand AI clear view (`/api/translate-description`); possible follow-up: pre-warming popular descriptions in CI
 4. Salary slider + active age filter in the pathways matrix

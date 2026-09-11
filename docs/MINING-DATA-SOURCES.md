@@ -547,23 +547,33 @@ mensual `.github/workflows/refresh-indicators.yml`, día 4 a las 06:00 UTC):
 - **Dependencia nueva**: `xlsx` (devDependency, solo para scripts; no llega al
   bundle del site).
 
-### Cotizaciones de las mineras (2026-09-10, mismo cron)
+### Cotizaciones de las mineras (regenerada el 2026-09-11 con el seed de 12, mismo cron)
 
 - **`scripts/ingest-stocks.mjs`** (mismo ritmo mensual, día 4 — corre en el
-  mismo workflow que el pulso): endpoint v8 de Yahoo Finance para los 8
+  mismo workflow que el pulso): endpoint v8 de Yahoo Finance para los 12
   tickers del seed curado; guarda precio, cierre de hace un año, variación
   anual, máximo/mínimo de 52 semanas y la serie de cierres mensuales en
   `src/data/stocks.json` (esquema `StocksFileSchema` en `src/schemas.ts`).
+- **Normalización a USD**: los ADR/OTC ya cotizan en dólares (HCHDF, NGLOY).
+  MMG (1208.HK, HKD) y Glencore (GLEN.L, peniques GBp) se normalizan con el
+  tipo de cambio público de Yahoo (`USDHKD=X`, `GBPUSD=X` + ÷100): aritmética
+  sobre datos reales, nunca inventados. La variación % es independiente de la
+  moneda, así que el ranking no cambia.
 - Los metadatos de empresa (nombre comercial, ticker, minas en Perú, metal)
   viven curados en el script: para añadir una empresa, extender
-  `COMPANIES_SEED` ahí.
-- La sección "Cómo van las mineras en la bolsa" (`StocksPulse.astro` en el
-  home) ordena por variación anual, marca ganadora/rezagada, cuántas cotizan a
-  menos de 10% de su máximo anual, y muestra el rango 52s como medidor.
-  Disclaimer permanente: no es asesoría de inversión.
-- Semilla generada el 2026-09-10 con datos reales de Yahoo: NEXA +172,0%,
-  SCCO +97,5%, HBM +98,0%, HCHDF +97,1%, BVN +68,9%, NEM +60,8%, FCX +58,7%,
-  NGLOY +54,8% en el año.
+  `COMPANIES_SEED` ahí. Seed actual (12): BVN, SCCO, FCX, NEXA, HBM, NEM,
+  HCHDF, NGLOY, MMG (Las Bambas), BHP (Antamina), Glencore (Antamina),
+  Teck (Antamina 22,5%). First Quantum queda fuera (sin mina operante en
+  Perú) y Chinalco/Toromocho fuera (sin proxy listado confiable: ACH da un
+  dato incoherente).
+- La sección "Las mineras con mejor crecimiento en bolsa" (`StocksPulse.astro`
+  en el home) muestra la franja compacta "El año en revisión" (ganadora,
+  rezagada, cuántas cotizan a menos de 10% de su máximo con una fila de
+  puntos por empresa), el top 3 por variación anual y un CTA a `/bolsa`.
+  La página `/bolsa` (`BolsaView.astro`) lleva el análisis completo: el
+  termómetro 52s de las 12, la caída desde la cima, el mejor/peor mes, los
+  metales (cobre/oro del pulso) y una tabla ordenable donde cada nombre enlaza
+  a `/jobs?q=<minera>`. Disclaimer permanente: no es asesoría de inversión.
 
 Si una fuente falla o cambia de formato, el script conserva los datos previos
 y su `lastVerifiedAt` (que envejece visible en la UI: "verificado {fecha}")

@@ -13,6 +13,11 @@ export function companiesRanked(): StockCompany[] {
   });
 }
 
+/** Top `n` por variación anual (solo con datos computables). */
+export function topPerformers(n = 3): StockCompany[] {
+  return companiesRanked().filter((c) => c.change1yPct != null).slice(0, n);
+}
+
 /** Ganadora y rezagada del año (con variación computable); null si no alcanza. */
 export function extremes(): { top: StockCompany; bottom: StockCompany } | null {
   const withData = stocks.companies.filter((c) => c.change1yPct != null);
@@ -32,6 +37,36 @@ export function countNearHigh(thresholdPct = 10): number {
 export function rangePos(c: StockCompany): number | null {
   if (!c.high52w || !c.low52w || c.high52w <= c.low52w) return null;
   return Math.min(1, Math.max(0, (c.price - c.low52w) / (c.high52w - c.low52w)));
+}
+
+/** Cuánto cayó del máximo de 52 semanas, en % (negativo; null sin datos). */
+export function drawdownPct(c: StockCompany): number | null {
+  if (!c.high52w || !c.price || c.high52w <= 0) return null;
+  return (c.price / c.high52w) * 100 - 100;
+}
+
+/** ¿Cotiza a menos de `thresholdPct` de su máximo anual? (para la fila de puntos). */
+export function isNearHigh(c: StockCompany, thresholdPct = 10): boolean {
+  return c.high52w != null && c.change1yPct != null && c.price >= c.high52w * (1 - thresholdPct / 100);
+}
+
+/** Mejor y peor mes de la serie: variación % entre cierres consecutivos,
+ *  con el índice del mes dentro de la serie (para etiquetar desde generatedAt). */
+export function monthExtremes(
+  c: StockCompany
+): { best: { pct: number; index: number }; worst: { pct: number; index: number } } | null {
+  if (c.series.length < 3) return null;
+  let best = { pct: -Infinity, index: 1 };
+  let worst = { pct: Infinity, index: 1 };
+  for (let i = 1; i < c.series.length; i++) {
+    const prev = c.series[i - 1];
+    if (prev <= 0) continue;
+    const pct = ((c.series[i] - prev) / prev) * 100;
+    if (pct > best.pct) best = { pct, index: i };
+    if (pct < worst.pct) worst = { pct, index: i };
+  }
+  if (!Number.isFinite(best.pct) || !Number.isFinite(worst.pct)) return null;
+  return { best, worst };
 }
 
 const usdFmt = new Intl.NumberFormat('es-PE', {

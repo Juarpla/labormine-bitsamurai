@@ -20,10 +20,12 @@
  * reporta como WARNING. La primera vez que una empresa no tiene datos, no
  * entra al JSON.
  *
- * Los ADR/OTC se eligen para que TODO esté en dólares (comparable y sin
- * peniques de la LSE para el público general): HCHDF (Hochschild, ADR 1:10)
- * y NGLOY (Anglo American, ADR). La variación % es la misma que la cotización
- * de Londres; el precio absoluto no.
+ * Todo se normaliza a dólares para que sea comparable para el público general:
+ *  - Los ADR/OTC ya cotizan en USD (HCHDF ADR 1:10, NGLOY ADR).
+ *  - MMG (1208.HK) cotiza en HKD y Glencore (GLEN.L) en peniques (GBp): el
+ *    script trae el tipo de cambio de Yahoo (mismo endpoint v8, par FX
+ *    público) y aplica aritmética sobre datos reales. La variación % no
+ *    cambia: es independiente de la moneda.
  */
 
 import https from 'node:https';
@@ -117,10 +119,49 @@ const COMPANIES_SEED = [
     metal: 'cobre',
     mines: 'Quellaveco (Moquegua)',
   },
+  {
+    id: 'mmg',
+    name: 'MMG',
+    ticker: '1208.HK',
+    exchange: 'HKEX',
+    exchangeRef: null,
+    metal: 'cobre',
+    mines: 'Las Bambas (Apurímac)',
+    /** HKD → USD: USDHKD=X devuelve HKD por 1 USD. */
+    fx: { pair: 'USDHKD=X', mode: 'divide' },
+  },
+  {
+    id: 'bhp',
+    name: 'BHP',
+    ticker: 'BHP',
+    exchange: 'NYSE',
+    exchangeRef: 'ASX: BHP',
+    metal: 'cobre',
+    mines: 'Antamina (Áncash) · 33,75%',
+  },
+  {
+    id: 'glencore',
+    name: 'Glencore',
+    ticker: 'GLEN.L',
+    exchange: 'LSE',
+    exchangeRef: 'LSE: GLEN',
+    metal: 'cobre',
+    mines: 'Antamina (Áncash) · 33,75%',
+    /** GBp → USD: peniques → libras (÷100) → USD (× GBPUSD=X). */
+    fx: { pair: 'GBPUSD=X', mode: 'multiply', factor: 0.01 },
+  },
+  {
+    id: 'teck',
+    name: 'Teck Resources',
+    ticker: 'TECK',
+    exchange: 'NYSE',
+    exchangeRef: null,
+    metal: 'cobre',
+    mines: 'Antamina (Áncash) · 22,5%',
+  },
 ];
 
-const UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+const UA = 'Mozilla/5.0';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** GET con reintentos y backoff ante 429/5xx (Yahoo raciona por IP). */
@@ -171,6 +212,20 @@ async function fetchChart(ticker) {
   };
 }
 
+/** Tipo de cambio USD por unidad de la moneda local, vía par FX de Yahoo.
+ *  Divide (valor/USD) o multiplica (USD×valor) según el seed. */
+async function fetchUsdRate(seed) {
+  if (!seed.fx) return null;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(
+    seed.fx.pair
+  )}?range=5d&interval=1d`;
+  const j = await fetchJson(url);
+  const meta = j?.chart?.result?.[0]?.meta ?? {};
+  const rate = Number(meta.regularMarketPrice);
+  if (!Number.isFinite(rate) || rate <= 0) throw new Error(`FX inválido (${seed.fx.pair})`);
+  return seed.fx.mode === 'divide' ? rate : (seed.fx.factor ?? 1) * rate;
+}
+
 // ── Ejecución ──────────────────────────────────────────────────────────────
 
 const prev = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, 'utf8')) : null;
@@ -182,26 +237,31 @@ const failed = [];
 for (const seed of COMPANIES_SEED) {
   try {
     const q = await fetchChart(seed.ticker);
+    const usd = await fetchUsdRate(seed);
+    const fx = usd == null ? 1 : seed.fx.mode === 'divide' ? 1 / usd : usd;
     const change1yPct =
       q.yearAgoClose > 0 ? ((q.price - q.yearAgoClose) / q.yearAgoClose) * 100 : null;
+    const { fx: _fx, ...curated } = seed;
     companies.push({
-      ...seed,
+      ...curated,
       currency: 'USD',
-      price: q.price,
-      yearAgoClose: q.yearAgoClose,
+      price: q.price * fx,
+      yearAgoClose: q.yearAgoClose * fx,
       change1yPct,
-      high52w: q.high52w,
-      low52w: q.low52w,
-      series: q.series,
+      high52w: q.high52w != null ? q.high52w * fx : null,
+      low52w: q.low52w != null ? q.low52w * fx : null,
+      series: q.series.map((v) => v * fx),
     });
     const pctTxt =
       change1yPct != null
         ? `${change1yPct >= 0 ? '+' : ''}${change1yPct.toFixed(1)}% en el año`
         : 'sin variación computable';
     console.log(
-      `OK ${seed.ticker}: US$${q.price.toFixed(2)} · ${pctTxt} · 52s ${
-        q.low52w != null ? q.low52w.toFixed(2) : '?'
-      }–${q.high52w != null ? q.high52w.toFixed(2) : '?'}`
+      `OK ${seed.ticker}: US$${(q.price * fx).toFixed(2)}${
+        usd != null ? ` (FX ${seed.fx.pair})` : ''
+      } · ${pctTxt} · 52s ${
+        q.low52w != null ? (q.low52w * fx).toFixed(2) : '?'
+      }–${q.high52w != null ? (q.high52w * fx).toFixed(2) : '?'}`
     );
   } catch (e) {
     if (prevByTicker.has(seed.ticker)) {
@@ -212,7 +272,7 @@ for (const seed of COMPANIES_SEED) {
       console.warn(`WARNING ${seed.ticker} (${e.message}) — sin datos previos, la empresa no entra este mes`);
     }
   }
-  await sleep(1200);
+  await sleep(2500);
 }
 
 if (companies.length === 0) {

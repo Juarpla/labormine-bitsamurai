@@ -169,18 +169,30 @@ const payload = JSON.stringify({
 
 <AdSlot slotId="home-spotlight-1" format="fluid" layoutKey="-fb+5w+4e-db+86" locale={locale} />
 
-<Chapter kicker={t('chapter.remote.kicker')} title={t('chapter.remote.title')} lead={t('chapter.remote.lead')}>
-  <div class="grid gap-4 sm:grid-cols-2">
-    {remotes.map((job) => <JobCard job={job} locale={locale} />)}
+<Chapter kicker={t('chapter.remote.kicker')} title={t('chapter.remote.title')} lead={t('chapter.remote.lead')} full>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {remotes.map((job) => <JobCard job={job} locale={locale} variant="compact" />)}
   </div>
+  <a
+    href={`${localePath(locale, '/jobs')}?type=remote`}
+    class="mt-6 inline-block text-sm font-semibold text-brand-400 hover:text-brand-300"
+  >
+    {t('common.viewAll')} →
+  </a>
 </Chapter>
 
 <AdSlot slotId="home-remote-1" format="auto" locale={locale} />
 
-<Chapter kicker={t('chapter.abroad.kicker')} title={t('chapter.abroad.title')} lead={t('chapter.abroad.lead')}>
-  <div class="grid gap-4 sm:grid-cols-2">
-    {abroad.map((job) => <JobCard job={job} locale={locale} />)}
+<Chapter kicker={t('chapter.abroad.kicker')} title={t('chapter.abroad.title')} lead={t('chapter.abroad.lead')} full>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {abroad.map((job) => <JobCard job={job} locale={locale} variant="compact" />)}
   </div>
+  <a
+    href={`${localePath(locale, '/jobs')}?tier=abroad`}
+    class="mt-6 inline-block text-sm font-semibold text-brand-400 hover:text-brand-300"
+  >
+    {t('common.viewAll')} →
+  </a>
 </Chapter>
 
 <Chapter kicker={t('chapter.passport.kicker')} title={t('chapter.passport.title')} lead={t('chapter.passport.lead')}>

@@ -39,7 +39,7 @@ const en = {
   'pulse.verificado': 'verified {date}',
   'pulse.actualizado': 'updated {date}',
 
-  'stocks.title': 'How the mining companies are trading',
+  'stocks.title': 'The best mining companies on the market',
   'stocks.lead':
     'Shares of the mining companies that operate in Peru move with metal prices and with what happens at each mine. Here is each company’s year — no finance jargon.',
   'stocks.snapshot': 'Quotes as of {date} · monthly refresh',
@@ -47,13 +47,56 @@ const en = {
   'stocks.analysis.title': 'The year in review',
   'stocks.analysis.top': 'Top gainer of the year',
   'stocks.analysis.bottom': 'Biggest laggard',
-  'stocks.analysis.nearHigh': 'Within 10% of their 52-week high',
+  'stocks.analysis.nearHigh': 'Near their best price of the year',
+  'stocks.analysis.nearHighHint': 'less than 10% below their highest price',
   'stocks.nearMax': 'today {pct}% off its 52-week high',
   'stocks.mines': 'Mines in Peru',
-  'stocks.metales':
-    'Copper {cobre} and gold {oro} over the year: the metals move in step with the group’s quotes.',
+
+  'stocks.top3.title': 'The 3 growing the most',
+  'stocks.top3.lead': 'The miners with the biggest share-price rise over the last 12 months.',
+  'stocks.cta': 'See more analysis',
   'stocks.disclaimer':
-    'Reference quotes in US dollars (ADRs where applicable) · Not investment advice.',
+    'Reference quotes in US dollars · Not investment advice.',
+  'bolsa.title': 'How the mining companies are trading',
+  'bolsa.lead':
+    'The full year of the 12 mining companies operating in Peru, explained without jargon: who is growing, who fell behind, and what that says about your next job.',
+  'bolsa.snapshot': 'Quotes as of {date} · monthly refresh · {n} miners with mines in Peru',
+  'bolsa.empleos': 'See this company’s jobs',
+  'bolsa.termometro.title': 'The year’s thermometer',
+  'bolsa.termometro.desc':
+    'Each miner on its own 12-month journey: from the coldest point (its lowest price of the year) to the hottest (its high).',
+  'bolsa.caida.title': 'The fall from the peak',
+  'bolsa.caida.desc':
+    'How far each share dropped from its best moment of the year. A miner near the peak often matches operations in full production.',
+  'bolsa.meses.title': 'The best and the worst month',
+  'bolsa.meses.desc':
+    'The month with the biggest rise and the biggest fall for each miner, over a full year.',
+  'bolsa.meses.nota': 'All bars share one scale across the 12 miners: amber, best month; gray, worst month. Compare across rows.',
+  'bolsa.metales.title': 'The metals that move everything',
+  'bolsa.metales.desc':
+    'Copper and gold are the sector’s thermometers: when they rise, the miners producing them tend to follow.',
+  'bolsa.metales.cobre': 'Copper price',
+  'bolsa.metales.oro': 'Gold price',
+  'bolsa.tabla.title': 'The {n} at a glance',
+  'bolsa.tabla.empresa': 'Miner',
+  'bolsa.tabla.metal': 'Metal',
+  'bolsa.tabla.ano': 'Year',
+  'bolsa.tabla.precio': 'Today',
+  'bolsa.tabla.rango': '52w range',
+  'bolsa.tabla.minas': 'Mines in Peru',
+  'bolsa.tabla.ordenar': 'Sort table by {col}',
+  'bolsa.glosario.title': 'What does this mean?',
+  'bolsa.glosario.accion':
+    'Share — a small piece of the company. When the mine does well, that piece is usually worth more.',
+  'bolsa.glosario.variacion':
+    'Annual change — how much the share rose or fell over the last 12 months. It decides the ranking.',
+  'bolsa.glosario.rango':
+    '52-week range — the road between the year’s lowest and highest price. Today the share sits somewhere on that road.',
+  'bolsa.glosario.maximo':
+    'Yearly high — the highest price the share reached over the last 12 months.',
+  'bolsa.glosario.adr':
+    'Foreign exchanges — quotes come in US dollars, normalized to USD so you can compare them.',
+  'bolsa.disclaimer': 'Reference quotes in US dollars (Yahoo Finance) · Not investment advice · The market does not guarantee vacancies: apply at the original source.',
 
   'chapter.inCountry.kicker': 'Chapter 01',
   'chapter.inCountry.title': 'Mining in Peru',
@@ -225,7 +268,7 @@ const es: Dictionary = {
   'pulse.verificado': 'verificado {date}',
   'pulse.actualizado': 'actualizado {date}',
 
-  'stocks.title': 'Cómo van las mineras en la bolsa',
+  'stocks.title': 'Las mejores mineras en bolsa',
   'stocks.lead':
     'Las acciones de las mineras que operan en el Perú se mueven con el precio de los metales y con lo que pasa en cada mina. Aquí, el año de cada una, sin jerga financiera.',
   'stocks.snapshot': 'Cotizaciones al {date} · refresco mensual',
@@ -233,13 +276,57 @@ const es: Dictionary = {
   'stocks.analysis.title': 'El año en revisión',
   'stocks.analysis.top': 'La ganadora del año',
   'stocks.analysis.bottom': 'La más rezagada',
-  'stocks.analysis.nearHigh': 'A menos de 10% de su máximo del año',
+  'stocks.analysis.nearHigh': 'Cerca de su mejor precio del año',
+  'stocks.analysis.nearHighHint': 'menos del 10% debajo de su precio más alto',
   'stocks.nearMax': 'hoy a {pct}% de su máximo del año',
   'stocks.mines': 'Minas en Perú',
-  'stocks.metales':
-    'Cobre {cobre} y oro {oro} en el año: los metales van de la mano de las cotizaciones del grupo.',
+
+  'stocks.top3.title': 'Las 3 que más crecen',
+  'stocks.top3.lead': 'Las mineras con la mayor subida de su acción en los últimos 12 meses.',
+  'stocks.cta': 'Ver más análisis',
   'stocks.disclaimer':
-    'Cotizaciones de referencia en dólares (ADR cuando corresponde) · No es asesoría de inversión.',
+    'Cotizaciones de referencia en dólares · No es asesoría de inversión.',
+  'bolsa.title': 'Cómo van las mineras en la bolsa',
+  'bolsa.lead':
+    'El año completo de las 12 mineras con operaciones en el Perú, explicado sin jerga: cuál crece, cuál se quedó atrás y qué dice eso de su próxima vacante.',
+  'bolsa.snapshot': 'Cotizaciones al {date} · refresco mensual · {n} mineras con minas en el Perú',
+  'bolsa.empleos': 'Ver empleos de esta minera',
+  'bolsa.termometro.title': 'El termómetro del año',
+  'bolsa.termometro.desc':
+    'Cada minera, en su propio recorrido de 12 meses: del punto más frío (su precio más bajo del año) al más caliente (su máximo).',
+  'bolsa.caida.title': 'La caída desde la cima',
+  'bolsa.caida.desc':
+    'Cuánto bajó cada acción desde su mejor momento del año. Una minera cerca de la cima suele coincidir con operaciones en plena producción.',
+  'bolsa.meses.title': 'El mejor y el peor mes',
+  'bolsa.meses.desc':
+    'El mes con la mayor subida y el de la mayor caída de cada minera, en un año completo.',
+  'bolsa.meses.nota':
+    'Todas las barras comparten una misma escala entre las 12 mineras: ámbar, mejor mes; gris, peor mes. Compara entre filas.',
+  'bolsa.metales.title': 'Los metales que mueven todo',
+  'bolsa.metales.desc':
+    'El cobre y el oro son los termómetros del sector: cuando suben, las mineras que los producen suelen ir detrás.',
+  'bolsa.metales.cobre': 'Precio del cobre',
+  'bolsa.metales.oro': 'Precio del oro',
+  'bolsa.tabla.title': 'Las {n} de un vistazo',
+  'bolsa.tabla.empresa': 'Minera',
+  'bolsa.tabla.metal': 'Metal',
+  'bolsa.tabla.ano': 'Año',
+  'bolsa.tabla.precio': 'Hoy',
+  'bolsa.tabla.rango': 'Rango 52s',
+  'bolsa.tabla.minas': 'Minas en el Perú',
+  'bolsa.tabla.ordenar': 'Ordenar tabla por {col}',
+  'bolsa.glosario.title': '¿Qué significa esto?',
+  'bolsa.glosario.accion':
+    'Acción — una parte pequeña de la empresa. Si la mina va bien, esa parte suele valer más.',
+  'bolsa.glosario.variacion':
+    'Variación anual — cuánto subió o bajó la acción en los últimos 12 meses. Es la cifra que decide el ranking.',
+  'bolsa.glosario.rango':
+    'Rango de 52 semanas — el camino entre el precio más bajo y el más alto del año. Hoy, la acción está en algún punto de ese camino.',
+  'bolsa.glosario.maximo':
+    'Máximo del año — el precio más alto que alcanzó la acción en los últimos 12 meses.',
+  'bolsa.glosario.adr':
+    'Bolsas del extranjero — las cotizaciones vienen en dólares y normalizadas a USD para que puedas compararlas entre sí.',
+  'bolsa.disclaimer': 'Cotizaciones de referencia en dólares (Yahoo Finance) · No es asesoría de inversión · La bolsa no garantiza vacantes: postula en la fuente original.',
 
   'chapter.inCountry.kicker': 'Capítulo 01',
   'chapter.inCountry.title': 'Minería en Perú',
@@ -409,7 +496,7 @@ const pt: Dictionary = {
   'pulse.verificado': 'verificado {date}',
   'pulse.actualizado': 'atualizado {date}',
 
-  'stocks.title': 'Como vão as mineradoras na bolsa',
+  'stocks.title': 'As melhores mineradoras na bolsa',
   'stocks.lead':
     'As ações das mineradoras que operam no Peru se movem com o preço dos metais e com o que acontece em cada mina. Aqui, o ano de cada uma, sem jargão financeiro.',
   'stocks.snapshot': 'Cotações em {date} · atualização mensal',
@@ -417,13 +504,57 @@ const pt: Dictionary = {
   'stocks.analysis.title': 'O ano em revisão',
   'stocks.analysis.top': 'A vencedora do ano',
   'stocks.analysis.bottom': 'A mais atrasada',
-  'stocks.analysis.nearHigh': 'A menos de 10% da máxima do ano',
+  'stocks.analysis.nearHigh': 'Perto do melhor preço do ano',
+  'stocks.analysis.nearHighHint': 'menos de 10% abaixo do preço mais alto',
   'stocks.nearMax': 'hoje a {pct}% da máxima do ano',
   'stocks.mines': 'Minas no Peru',
-  'stocks.metales':
-    'Cobre {cobre} e ouro {oro} no ano: os metais acompanham as cotações do grupo.',
+
+  'stocks.top3.title': 'As 3 que mais crescem',
+  'stocks.top3.lead': 'As mineradoras com a maior alta de suas ações nos últimos 12 meses.',
+  'stocks.cta': 'Ver mais análises',
   'stocks.disclaimer':
-    'Cotações de referência em dólares (ADRs quando aplicável) · Não é recomendação de investimento.',
+    'Cotações de referência em dólares · Não é recomendação de investimento.',
+  'bolsa.title': 'Como vão as mineradoras na bolsa',
+  'bolsa.lead':
+    'O ano completo das 12 mineradoras com operações no Peru, explicado sem jargão: qual cresce, qual ficou para trás e o que isso diz sobre sua próxima vaga.',
+  'bolsa.snapshot': 'Cotações em {date} · atualização mensal · {n} mineradoras com minas no Peru',
+  'bolsa.empleos': 'Ver vagas desta mineradora',
+  'bolsa.termometro.title': 'O termômetro do ano',
+  'bolsa.termometro.desc':
+    'Cada mineradora na própria jornada de 12 meses: do ponto mais frio (seu preço mais baixo do ano) ao mais quente (sua máxima).',
+  'bolsa.caida.title': 'A queda do topo',
+  'bolsa.caida.desc':
+    'Quanto cada ação caiu do seu melhor momento do ano. Uma mineradora perto do topo costuma coincidir com operações em plena produção.',
+  'bolsa.meses.title': 'O melhor e o pior mês',
+  'bolsa.meses.desc':
+    'O mês de maior alta e o de maior queda de cada mineradora, em um ano completo.',
+  'bolsa.meses.nota':
+    'Todas as barras compartilham a mesma escala entre as 12 mineradoras: âmbar, melhor mês; cinza, pior mês. Compare entre as linhas.',
+  'bolsa.metales.title': 'Os metais que movem tudo',
+  'bolsa.metales.desc':
+    'O cobre e o ouro são os termômetros do setor: quando sobem, as mineradoras que os produzem costumam ir junto.',
+  'bolsa.metales.cobre': 'Preço do cobre',
+  'bolsa.metales.oro': 'Preço do ouro',
+  'bolsa.tabla.title': 'As {n} de relance',
+  'bolsa.tabla.empresa': 'Mineradora',
+  'bolsa.tabla.metal': 'Metal',
+  'bolsa.tabla.ano': 'Ano',
+  'bolsa.tabla.precio': 'Hoje',
+  'bolsa.tabla.rango': 'Faixa 52s',
+  'bolsa.tabla.minas': 'Minas no Peru',
+  'bolsa.tabla.ordenar': 'Ordenar tabela por {col}',
+  'bolsa.glosario.title': 'O que isso significa?',
+  'bolsa.glosario.accion':
+    'Ação — uma pequena parte da empresa. Quando a mina vai bem, essa parte costuma valer mais.',
+  'bolsa.glosario.variacion':
+    'Variação anual — quanto a ação subiu ou caiu nos últimos 12 meses. É ela que decide o ranking.',
+  'bolsa.glosario.rango':
+    'Faixa de 52 semanas — o caminho entre o preço mais baixo e o mais alto do ano. Hoje a ação está em algum ponto desse caminho.',
+  'bolsa.glosario.maximo':
+    'Máxima do ano — o preço mais alto que a ação alcançou nos últimos 12 meses.',
+  'bolsa.glosario.adr':
+    'Bolsas do exterior — as cotações vêm em dólares, normalizadas em USD para você comparar.',
+  'bolsa.disclaimer': 'Cotações de referência em dólares (Yahoo Finance) · Não é recomendação de investimento · A bolsa não garante vagas: candidate-se na fonte original.',
 
   'chapter.inCountry.kicker': 'Capítulo 01',
   'chapter.inCountry.title': 'Mineração no Peru',
