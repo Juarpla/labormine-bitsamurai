@@ -1,0 +1,240 @@
+---
+import { useTranslations, localePath, type Locale } from '../lib/i18n';
+import {
+  indicators,
+  seriesById,
+  latest,
+  yoyPct,
+  topDepartments,
+  postingsTrend,
+  activePostings,
+  formatN,
+  fmtMonth,
+  fmtDay,
+  signedPct,
+} from '../lib/indicators';
+import type { IndicatorPoint } from '../schemas';
+
+interface Props {
+  locale?: Locale;
+}
+const { locale = 'es' } = Astro.props;
+const t = useTranslations(locale);
+
+const copper = seriesById('copper-price');
+const gold = seriesById('gold-price');
+const posts = postingsTrend();
+const active = activePostings();
+const depts = topDepartments(5);
+const employment = indicators.sector.employment;
+
+const sourceOf = (id: string) => indicators.sources.find((s) => s.id === id);
+const srcShort: Record<string, string> = {
+  'wb-pink-sheet': 'Banco Mundial · Pink Sheet',
+  'minem-units-map': 'MINEM · Mapa de unidades',
+  'minem-bem': 'MINEM · Boletín Estadístico Minero',
+};
+
+function coords(points: IndicatorPoint[], w: number, h: number, pad: number) {
+  const vals = points.map((p) => p.value);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const span = max - min || 1;
+  const xy = points.map((p, i) => {
+    const x = pad + (i / (points.length - 1)) * (w - pad * 2);
+    const y = pad + (1 - (p.value - min) / span) * (h - pad * 2);
+    return { x, y };
+  });
+  return { poly: xy.map(({ x, y }) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '), last: xy.at(-1) };
+}
+
+const W = 320;
+const H = 80;
+const PAD = 6;
+const copperChart = copper && copper.points.length >= 2 ? coords(copper.points, W, H, PAD) : null;
+const goldChart = gold && gold.points.length >= 2 ? coords(gold.points, W, H, PAD) : null;
+
+// barras semanales del feed propio — repartidas a lo ancho del card
+const barW = 18;
+const maxPost = Math.max(...posts.map((p) => p.value), 1);
+const bars = posts.map((p, i) => ({
+  x: PAD + (i / Math.max(posts.length - 1, 1)) * (W - PAD * 2 - barW),
+  h: Math.max(2, Math.round((p.value / maxPost) * (H - PAD * 2))),
+  last: i === posts.length - 1,
+  date: p.date,
+  value: p.value,
+}));
+
+const depSrc = sourceOf(indicators.departments?.sourceId ?? 'minem-units-map');
+---
+
+<section class="mx-auto max-w-6xl px-4 py-24 sm:px-6 md:py-36">
+  <div class="max-w-2xl">
+    <h2 class="font-display text-3xl font-semibold leading-tight text-graphite-100 sm:text-4xl">
+      {t('pulse.title')}
+    </h2>
+    <p class="mt-4 text-base leading-relaxed text-graphite-400">{t('pulse.lead')}</p>
+    <a
+      href={localePath(locale, '/jobs')}
+      class="mt-6 inline-block text-sm font-semibold text-brand-400 transition-colors hover:text-brand-300"
+    >
+      {t('common.viewAll')} →
+    </a>
+  </div>
+
+  <div class="reveal mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+    {
+      [copper, gold].map((series) => {
+        if (!series) return null;
+        const chart = series.id === 'copper-price' ? copperChart : goldChart;
+        const yoy = yoyPct(series);
+        const last = latest(series);
+        const src = sourceOf(series.sourceId);
+        const positive = (yoy ?? 0) > 0;
+        return (
+          <article class="flex flex-col gap-2 rounded-2xl border border-graphite-800 bg-graphite-900 p-5 lg:col-span-2">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-display text-sm font-semibold leading-snug text-graphite-100">{series.label}</h3>
+              {signedPct(yoy) && (
+                <span
+                  class:list={[
+                    'shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                    positive ? 'border-brand-600/60 bg-brand-500/10 text-brand-400' : 'border-graphite-600 bg-graphite-850 text-graphite-300',
+                  ]}
+                >
+                  {signedPct(yoy)}% {t('pulse.interanual')}
+                </span>
+              )}
+            </div>
+            <p class="font-display text-3xl font-semibold text-graphite-100">
+              {formatN(last.value)} <span class="text-xs font-normal text-graphite-400">{series.unit}</span>
+            </p>
+            <p class="text-[11px] text-graphite-400">promedio mensual · {fmtMonth(last.date)}</p>
+            <svg
+              viewBox={`0 0 ${W} ${H}`}
+              preserveAspectRatio="none"
+              class="h-20 w-full"
+              role="img"
+              aria-label={`${series.label}: ${formatN(last.value)} ${series.unit} en ${fmtMonth(last.date)}; ${signedPct(yoy)}% ${t('pulse.interanual')}.`}
+            >
+              {chart && (
+                <>
+                  <polyline
+                    points={chart.poly}
+                    fill="none"
+                    stroke="#C6CEDD"
+                    stroke-width="1.5"
+                    vector-effect="non-scaling-stroke"
+                  />
+                  <circle cx={chart.last.x} cy={chart.last.y} r="3" fill="#FFC247" />
+                </>
+              )}
+            </svg>
+            {src && (
+              <p class="mt-auto text-[11px] leading-snug text-graphite-400">
+                {t('pulse.fuente')}: <a href={src.officialUrl} target="_blank" rel="noopener nofollow" class="text-graphite-200 hover:text-brand-400">{srcShort[src.id]}</a> · {t('pulse.verificado', { date: fmtDay(src.lastVerifiedAt) })}
+              </p>
+            )}
+          </article>
+        );
+      })
+    }
+
+    {
+      posts.length > 0 && (
+        <article class="flex flex-col gap-2 rounded-2xl border border-graphite-800 bg-graphite-900 p-5 sm:col-span-2 lg:col-span-2">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="font-display text-sm font-semibold leading-snug text-graphite-100">{t('pulse.postings')}</h3>
+          </div>
+          <p class="font-display text-3xl font-semibold text-graphite-100">
+            {formatN(active)} <span class="text-xs font-normal text-graphite-400">{t('pulse.ofertasActivas')}</span>
+          </p>
+          <p class="text-[11px] text-graphite-400">publicadas por semana · últimas {posts.length}</p>
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="none"
+            class="h-20 w-full"
+            role="img"
+            aria-label={`${t('pulse.postings')} por semana en el feed de Labormin: ${formatN(active)} ${t('pulse.ofertasActivas')} en total; la semana del ${fmtDay(posts.at(-1)?.date)} con ${formatN(posts.at(-1)?.value)}.`}
+          >
+            {bars.map((b) => (
+              <rect
+                x={b.x}
+                y={H - PAD - b.h}
+                width={barW}
+                height={b.h}
+                rx="2"
+                fill={b.last ? '#F5A623' : '#3A4356'}
+              />
+            ))}
+          </svg>
+          <p class="mt-auto text-[11px] leading-snug text-graphite-400">
+            {t('pulse.fuente')}: <span class="text-graphite-200">Feed de Labormin</span> · {t('pulse.actualizado', { date: fmtDay(indicators.generatedAt) })}
+          </p>
+        </article>
+      )
+    }
+
+    {
+      employment && (
+        <article class="flex flex-col gap-2 rounded-2xl border border-graphite-800 bg-graphite-900 p-5 sm:col-span-2 lg:col-span-3">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="font-display text-sm font-semibold leading-snug text-graphite-100">{employment.label}</h3>
+            <span
+              class:list={[
+                'shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium',
+                employment.changeYoYPct > 0
+                  ? 'border-brand-600/60 bg-brand-500/10 text-brand-400'
+                  : 'border-graphite-600 bg-graphite-850 text-graphite-300',
+              ]}
+            >
+              {signedPct(employment.changeYoYPct)}% {t('pulse.interanual')}
+            </span>
+          </div>
+          <p class="font-display text-3xl font-semibold text-graphite-100">
+            {formatN(employment.value)} <span class="text-xs font-normal text-graphite-400">{employment.unit}</span>
+          </p>
+          <p class="text-[11px] leading-snug text-graphite-400">{employment.note}</p>
+          <p class="text-[11px] text-graphite-400">
+            {fmtMonth(employment.period)} · {employment.breakdown.map((b) => `${formatN(b.value)} en ${b.label.toLowerCase()}`).join(' · ')}
+          </p>
+          <p class="mt-auto text-[11px] leading-snug text-graphite-400">
+            {t('pulse.fuente')}: <a href={employment.officialUrl} target="_blank" rel="noopener nofollow" class="text-graphite-200 hover:text-brand-400">{srcShort['minem-bem']}</a> · {t('pulse.verificado', { date: fmtDay(employment.lastVerifiedAt) })}
+          </p>
+        </article>
+      )
+    }
+
+    {
+      indicators.departments && depts.length > 0 && (
+        <article class="flex flex-col gap-2 rounded-2xl border border-graphite-800 bg-graphite-900 p-5 sm:col-span-2 lg:col-span-3">
+          <div class="flex items-start justify-between gap-2">
+            <h3 class="font-display text-sm font-semibold leading-snug text-graphite-100">{indicators.departments.label}</h3>
+            <span class="shrink-0 rounded-full border border-brand-600/60 bg-brand-500/10 px-2.5 py-1 text-[11px] font-medium text-brand-400">
+              {formatN(indicators.departments.totalMetallic)} unidades
+            </span>
+          </div>
+          <p class="text-[11px] leading-snug text-graphite-400">metálicas en producción · top departamentos</p>
+          <div class="flex flex-col gap-2">
+            {depts.map((d, i) => (
+              <div class="flex items-center gap-2 text-xs">
+                <span class="w-20 shrink-0 truncate text-graphite-200" title={d.name}>{d.name}</span>
+                <span class="h-1.5 flex-1 overflow-hidden rounded-full bg-graphite-800">
+                  <span
+                    class="block h-1.5 rounded-full"
+                    class:list={[i === 0 ? 'bg-brand-500' : 'bg-graphite-600']}
+                    style={`width:${Math.round((d.count / depts[0].count) * 100)}%`}
+                  />
+                </span>
+                <span class="w-5 shrink-0 text-right text-graphite-400">{d.count}</span>
+              </div>
+            ))}
+          </div>
+          <p class="mt-auto text-[11px] leading-snug text-graphite-400">
+            {t('pulse.fuente')}: <a href={depSrc?.officialUrl} target="_blank" rel="noopener nofollow" class="text-graphite-200 hover:text-brand-400">{srcShort[indicators.departments.sourceId]}</a> · {t('pulse.verificado', { date: fmtDay(depSrc?.lastVerifiedAt) })}
+          </p>
+        </article>
+      )
+    }
+  </div>
+</section>

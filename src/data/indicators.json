@@ -1,0 +1,325 @@
+{
+  "generatedAt": "2026-09-10T20:00:50.273Z",
+  "series": [
+    {
+      "id": "copper-price",
+      "label": "Precio del cobre",
+      "unit": "USD/tm",
+      "sourceId": "wb-pink-sheet",
+      "points": [
+        {
+          "date": "2024-09",
+          "value": 9237
+        },
+        {
+          "date": "2024-10",
+          "value": 9534
+        },
+        {
+          "date": "2024-11",
+          "value": 9076
+        },
+        {
+          "date": "2024-12",
+          "value": 8916
+        },
+        {
+          "date": "2025-01",
+          "value": 8991
+        },
+        {
+          "date": "2025-02",
+          "value": 9331
+        },
+        {
+          "date": "2025-03",
+          "value": 9740
+        },
+        {
+          "date": "2025-04",
+          "value": 9177
+        },
+        {
+          "date": "2025-05",
+          "value": 9533
+        },
+        {
+          "date": "2025-06",
+          "value": 9835
+        },
+        {
+          "date": "2025-07",
+          "value": 9771
+        },
+        {
+          "date": "2025-08",
+          "value": 9670
+        },
+        {
+          "date": "2025-09",
+          "value": 9984
+        },
+        {
+          "date": "2025-10",
+          "value": 10740
+        },
+        {
+          "date": "2025-11",
+          "value": 10812
+        },
+        {
+          "date": "2025-12",
+          "value": 11785
+        },
+        {
+          "date": "2026-01",
+          "value": 13012
+        },
+        {
+          "date": "2026-02",
+          "value": 12951
+        },
+        {
+          "date": "2026-03",
+          "value": 12529
+        },
+        {
+          "date": "2026-04",
+          "value": 12951
+        },
+        {
+          "date": "2026-05",
+          "value": 13543
+        },
+        {
+          "date": "2026-06",
+          "value": 13552
+        },
+        {
+          "date": "2026-07",
+          "value": 13543
+        },
+        {
+          "date": "2026-08",
+          "value": 14326
+        }
+      ]
+    },
+    {
+      "id": "gold-price",
+      "label": "Precio del oro",
+      "unit": "USD/oz",
+      "sourceId": "wb-pink-sheet",
+      "points": [
+        {
+          "date": "2024-09",
+          "value": 2571
+        },
+        {
+          "date": "2024-10",
+          "value": 2690
+        },
+        {
+          "date": "2024-11",
+          "value": 2651
+        },
+        {
+          "date": "2024-12",
+          "value": 2648
+        },
+        {
+          "date": "2025-01",
+          "value": 2710
+        },
+        {
+          "date": "2025-02",
+          "value": 2895
+        },
+        {
+          "date": "2025-03",
+          "value": 2983
+        },
+        {
+          "date": "2025-04",
+          "value": 3218
+        },
+        {
+          "date": "2025-05",
+          "value": 3309
+        },
+        {
+          "date": "2025-06",
+          "value": 3353
+        },
+        {
+          "date": "2025-07",
+          "value": 3340
+        },
+        {
+          "date": "2025-08",
+          "value": 3368
+        },
+        {
+          "date": "2025-09",
+          "value": 3668
+        },
+        {
+          "date": "2025-10",
+          "value": 4058
+        },
+        {
+          "date": "2025-11",
+          "value": 4087
+        },
+        {
+          "date": "2025-12",
+          "value": 4309
+        },
+        {
+          "date": "2026-01",
+          "value": 4753
+        },
+        {
+          "date": "2026-02",
+          "value": 5020
+        },
+        {
+          "date": "2026-03",
+          "value": 4856
+        },
+        {
+          "date": "2026-04",
+          "value": 4721
+        },
+        {
+          "date": "2026-05",
+          "value": 4587
+        },
+        {
+          "date": "2026-06",
+          "value": 4228
+        },
+        {
+          "date": "2026-07",
+          "value": 4073
+        },
+        {
+          "date": "2026-08",
+          "value": 4411
+        }
+      ]
+    }
+  ],
+  "departments": {
+    "sourceId": "minem-units-map",
+    "label": "Unidades mineras en producción",
+    "rows": [
+      {
+        "name": "Arequipa",
+        "count": 12
+      },
+      {
+        "name": "Lima",
+        "count": 10
+      },
+      {
+        "name": "La Libertad",
+        "count": 9
+      },
+      {
+        "name": "Pasco",
+        "count": 8
+      },
+      {
+        "name": "Ica",
+        "count": 6
+      },
+      {
+        "name": "Junin",
+        "count": 5
+      },
+      {
+        "name": "Cajamarca",
+        "count": 5
+      },
+      {
+        "name": "Moquegua",
+        "count": 4
+      },
+      {
+        "name": "Ayacucho",
+        "count": 4
+      },
+      {
+        "name": "Huancavelica",
+        "count": 4
+      },
+      {
+        "name": "Ancash",
+        "count": 4
+      },
+      {
+        "name": "Puno",
+        "count": 3
+      },
+      {
+        "name": "Cusco",
+        "count": 2
+      },
+      {
+        "name": "Tacna",
+        "count": 2
+      },
+      {
+        "name": "Huanuco",
+        "count": 1
+      },
+      {
+        "name": "Junin / Lima",
+        "count": 1
+      },
+      {
+        "name": "Apurimac",
+        "count": 1
+      }
+    ],
+    "totalMetallic": 81,
+    "totalAll": 146
+  },
+  "sector": {
+    "employment": {
+      "label": "Empleo minero formal",
+      "value": 291044,
+      "unit": "puestos formales",
+      "period": "2026-06",
+      "changeYoYPct": 11.1,
+      "breakdown": [
+        {
+          "label": "Empresas mineras",
+          "value": 79161
+        },
+        {
+          "label": "Contratistas y conexos",
+          "value": 211883
+        }
+      ],
+      "note": "Empleo directo formal declarado por titulares mineros (ESTAMIN) al Boletín Estadístico Minero de MINEM.",
+      "officialUrl": "https://cdn.www.gob.pe/uploads/document/file/10440697/8470716-bem-junio-2026.pdf",
+      "lastVerifiedAt": "2026-09-10"
+    }
+  },
+  "sources": [
+    {
+      "id": "wb-pink-sheet",
+      "name": "Banco Mundial — Commodity Price Data (Pink Sheet)",
+      "officialUrl": "https://www.worldbank.org/en/research/commodity-markets",
+      "lastVerifiedAt": "2026-09-10"
+    },
+    {
+      "id": "minem-units-map",
+      "name": "MINEM — Mapa de Principales Unidades Mineras en Producción (edición anual vigente)",
+      "officialUrl": "https://www.gob.pe/institucion/minem/informes-publicaciones/6911615-mapa-principales-unidades-mineras-en-produccion-2025",
+      "lastVerifiedAt": "2026-09-10"
+    }
+  ]
+}

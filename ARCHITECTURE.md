@@ -240,11 +240,17 @@ respect `prefers-reduced-motion`.
 
 ## 6. Ads (AdSense)
 
-- `<AdSlot slotId format layoutKey />` — single component for all placements.
+- `<AdSlot slotId format layoutKey size media />` — single component for all placements.
   Renders a real `adsbygoogle` unit only when `PUBLIC_ADSENSE_CLIENT` is set in
   production; otherwise a neutral labeled placeholder so layout is testable.
-- Placements: home (2), `/jobs` in-feed every ~9 cards, `/jobs/[slug]` in-content,
-  `/visa-pathways` (1), `/eventos` (1).
+  Fixed-size units (`size`) emit AdSense fixed-size code; `media` gates the
+  `adsbygoogle.push` call so a unit never requests an ad outside its breakpoint
+  (nothing is hidden after serving).
+- Placements: home (2), `/jobs` always-on slots outside the filterable grid (mobile/
+  tablet: 320×50 above the filters + 320×100 after the list; desktop ≥lg: 970×90
+  after the list; ≥1280px adds 160×600 side rails, sticky-bounded to the section so
+  they release before the bottom ad and footer), `/jobs/[slug]`
+  in-content, `/visa-pathways` (1), `/eventos` (1).
 - **Policy constraints (non-negotiable):** every unit is labeled ("Ad" /
   "Anuncio" / "Anúncio"); units must not be designed to induce accidental clicks;
   ad density stays low. See DESIGN.md §6.

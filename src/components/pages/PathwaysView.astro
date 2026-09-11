@@ -24,9 +24,25 @@ const pathways = pathwaysRaw.pathways.filter(
 );
 ---
 
-<section class="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+<div class="xl:grid xl:grid-cols-[160px_56rem_160px] xl:justify-center xl:gap-4">
+  <AdSlot
+    slotId="pathways-side-1"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+  <section class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
   <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('pathways.title')}</h1>
   <p class="mt-4 max-w-2xl text-graphite-400">{t('pathways.lead')}</p>
+
+  <AdSlot
+    slotId="pathways-top-1"
+    size={{ w: 320, h: 50 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
 
   <h2 class="mt-12 font-display text-2xl font-semibold text-graphite-100">
     {t('pathways.forYou', { nationality: countryName(DEFAULT_NATIONALITY) })}
@@ -78,6 +94,30 @@ const pathways = pathwaysRaw.pathways.filter(
       ))
     }
   </div>
-
-  <AdSlot slotId="pathways-1" format="auto" locale={locale} />
 </section>
+
+  <AdSlot
+    slotId="pathways-side-2"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+</div>
+
+<div class="pb-4">
+  <AdSlot
+    slotId="pathways-bottom-desktop-1"
+    size={{ w: 970, h: 90 }}
+    media="(min-width: 1024px)"
+    locale={locale}
+    class="mx-auto w-fit hidden lg:block"
+  />
+  <AdSlot
+    slotId="pathways-bottom-mobile-1"
+    size={{ w: 320, h: 100 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+</div>

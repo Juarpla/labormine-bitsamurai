@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import { useTranslations } from '../../lib/i18n';
 
 const locale = 'es' as const;
@@ -28,11 +29,27 @@ const guias = [
 ---
 
 <Layout title={`${t('nav.guias')} — Labormin`} description="Guías prácticas para postular a empleos mineros en Perú y el extranjero." locale={locale} path="/guias">
+<div class="xl:grid xl:grid-cols-[160px_56rem_160px] xl:justify-center xl:gap-4">
+  <AdSlot
+    slotId="guias-side-1"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
   <article class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
     <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('nav.guias')}</h1>
     <p class="mt-4 max-w-2xl text-graphite-400">
       {t('chapter.guides.lead')} Escritas por el equipo de Labormin, sin promesas de ingresos y con la fuente oficial siempre a la vista.
     </p>
+
+    <AdSlot
+      slotId="guias-top-1"
+      size={{ w: 320, h: 50 }}
+      media="(max-width: 1023.98px)"
+      locale={locale}
+      class="mx-auto w-fit lg:hidden"
+    />
 
     <div class="mt-10 grid gap-4 sm:grid-cols-2">
       {guias.map((g) => (
@@ -47,4 +64,29 @@ const guias = [
       ))}
     </div>
   </article>
+  <AdSlot
+    slotId="guias-side-2"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+</div>
+
+<div class="pb-4">
+  <AdSlot
+    slotId="guias-bottom-desktop-1"
+    size={{ w: 970, h: 90 }}
+    media="(min-width: 1024px)"
+    locale={locale}
+    class="mx-auto w-fit hidden lg:block"
+  />
+  <AdSlot
+    slotId="guias-bottom-mobile-1"
+    size={{ w: 320, h: 100 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+</div>
 </Layout>

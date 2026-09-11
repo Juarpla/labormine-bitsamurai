@@ -23,72 +23,131 @@ const payload = JSON.stringify({
 });
 ---
 
-<section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+<div class="xl:grid xl:grid-cols-[160px_56rem_160px] xl:justify-center xl:gap-4">
+  <AdSlot
+    slotId="jobs-side-1"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+  <section class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
   <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('jobs.title')}</h1>
   <p class="mt-4 max-w-2xl text-graphite-400">{t('jobs.lead')}</p>
 
-  <div class="mt-10 grid gap-3 rounded-2xl border border-graphite-800 bg-graphite-900/60 p-4 sm:grid-cols-2 lg:grid-cols-5">
-    <div class="flex flex-col gap-1">
-      <label for="f-country" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.country')}</label>
-      <select id="f-country" class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
-        <option value="">{t('jobs.filter.all')}</option>
-        {presentCountries.map((c) => <option value={c}>{c === GLOBAL ? t('card.global') : countryName(c)}</option>)}
-      </select>
+  <AdSlot
+    slotId="jobs-top-1"
+    size={{ w: 320, h: 50 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+
+  <div class="mt-10 rounded-2xl border border-graphite-800 bg-graphite-900/60 p-4">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="flex min-w-0 flex-col gap-1">
+        <label for="f-country" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.country')}</label>
+        <select id="f-country" class="w-full rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
+          <option value="">{t('jobs.filter.all')}</option>
+          {presentCountries.map((c) => <option value={c}>{c === GLOBAL ? t('card.global') : countryName(c)}</option>)}
+        </select>
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label for="f-category" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.category')}</label>
+        <select id="f-category" class="w-full rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
+          <option value="">{t('jobs.filter.all')}</option>
+          {presentCategories.map((c) => <option value={c}>{c}</option>)}
+        </select>
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label for="f-type" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.type')}</label>
+        <select id="f-type" class="w-full rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
+          <option value="">{t('jobs.filter.all')}</option>
+          <option value="onsite">{t('jobs.type.onsite')}</option>
+          <option value="remote">{t('jobs.type.remote')}</option>
+        </select>
+      </div>
+      <div class="flex min-w-0 flex-col gap-1">
+        <label for="f-search" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.searchLabel')}</label>
+        <input
+          id="f-search"
+          type="search"
+          placeholder={t('jobs.filter.search')}
+          class="w-full rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500"
+        />
+      </div>
     </div>
-    <div class="flex flex-col gap-1">
-      <label for="f-category" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.category')}</label>
-      <select id="f-category" class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
-        <option value="">{t('jobs.filter.all')}</option>
-        {presentCategories.map((c) => <option value={c}>{c}</option>)}
-      </select>
-    </div>
-    <div class="flex flex-col gap-1">
-      <label for="f-type" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.type')}</label>
-      <select id="f-type" class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500">
-        <option value="">{t('jobs.filter.all')}</option>
-        <option value="onsite">{t('jobs.type.onsite')}</option>
-        <option value="remote">{t('jobs.type.remote')}</option>
-      </select>
-    </div>
-    <div class="flex flex-col gap-1">
-      <label for="f-search" class="text-xs font-semibold uppercase tracking-widest text-graphite-400">{t('jobs.filter.search')}</label>
-      <input
-        id="f-search"
-        type="search"
-        placeholder={t('jobs.filter.search')}
-        class="rounded-xl border border-graphite-700 bg-graphite-900 px-3 py-2 text-sm outline-none focus:border-brand-500"
-      />
-    </div>
-    <div class="flex items-end gap-3">
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
       <label class="flex cursor-pointer items-center gap-2 text-sm text-graphite-200">
         <input id="f-visa" type="checkbox" class="h-4 w-4 accent-brand-500" />
-        {t('jobs.filter.visa')}
+        <span class="whitespace-nowrap">{t('jobs.filter.visa')}</span>
       </label>
-      <button id="f-clear" class="ml-auto text-xs text-graphite-400 underline hover:text-brand-400">{t('jobs.clear')}</button>
+      <button
+        id="f-clear"
+        type="button"
+        class="rounded-full border border-graphite-700 px-3.5 py-1.5 text-sm text-graphite-200 outline-none transition-colors hover:border-brand-500 hover:text-brand-400 focus-visible:border-brand-500"
+      >
+        {t('jobs.clear')}
+      </button>
     </div>
   </div>
 
   <p id="f-count" class="mt-6 text-sm text-graphite-400">{t('jobs.count', { n: jobs.length })}</p>
 
-  <div id="jobs-grid" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-    {jobs.map((job, i) => (
-      <Fragment>
-        <JobCard job={job} locale={locale} />
-        {(i + 1) % 9 === 0 && (
-          <AdSlot
-            slotId={`jobs-infeed-${i}`}
-            format="fluid"
-            layoutKey="-fb+5w+4e-db+86"
-            locale={locale}
-            class="sm:col-span-2 lg:col-span-3"
-          />
-        )}
-      </Fragment>
+  <div id="jobs-grid" class="mt-4 grid gap-4 sm:grid-cols-2">
+    {jobs.map((job) => (
+      <JobCard job={job} locale={locale} />
     ))}
   </div>
 
-  <p id="jobs-empty" class="mt-10 hidden text-center text-graphite-400">{t('jobs.empty')}</p>
+  <div id="jobs-empty" class="mt-10 hidden">
+    <div class="flex flex-col items-center rounded-2xl border border-graphite-800 bg-graphite-900/40 px-6 py-14 text-center sm:py-16">
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+        <circle cx="36" cy="34" r="22" stroke="#3A4356" stroke-width="2" />
+        <path d="M52 50 62 60" stroke="#3A4356" stroke-width="2" stroke-linecap="round" />
+        <path d="M26 39a10 10 0 0 1 20 0" stroke="#7A8598" stroke-width="2" stroke-linecap="round" />
+        <path d="M22 39h28" stroke="#7A8598" stroke-width="2" stroke-linecap="round" />
+        <circle cx="36" cy="33" r="2.5" fill="#F5A623" />
+      </svg>
+      <h2 class="mt-6 font-display text-2xl font-semibold text-graphite-100">{t('jobs.empty.title')}</h2>
+      <p class="mt-3 max-w-sm text-sm leading-relaxed text-graphite-400">{t('jobs.empty.body')}</p>
+      <button
+        id="f-clear-empty"
+        type="button"
+        class="mt-6 rounded-full border border-graphite-700 px-4 py-2 text-sm text-graphite-200 outline-none transition-colors hover:border-brand-500 hover:text-brand-400 focus-visible:border-brand-500"
+      >
+        {t('jobs.clear')}
+      </button>
+      <p class="mt-5 text-xs text-graphite-600">{t('jobs.empty.hint')}</p>
+    </div>
+  </div>
 </section>
+
+  <AdSlot
+    slotId="jobs-side-2"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+</div>
+
+<div class="pb-4">
+  <AdSlot
+    slotId="jobs-bottom-desktop-1"
+    size={{ w: 970, h: 90 }}
+    media="(min-width: 1024px)"
+    locale={locale}
+    class="mx-auto w-fit hidden lg:block"
+  />
+  <AdSlot
+    slotId="jobs-bottom-mobile-1"
+    size={{ w: 320, h: 100 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+</div>
 
 <JobDrawer locale={locale} />
 
@@ -135,12 +194,14 @@ const payload = JSON.stringify({
   [countrySel, categorySel, typeSel].forEach((el) => el.addEventListener('change', applyFilters));
   visaCb.addEventListener('change', applyFilters);
   searchInput.addEventListener('input', applyFilters);
-  clearBtn.addEventListener('click', () => {
+  function clearFilters() {
     countrySel.value = '';
     categorySel.value = '';
     typeSel.value = '';
     visaCb.checked = false;
     searchInput.value = '';
     applyFilters();
-  });
+  }
+  clearBtn.addEventListener('click', clearFilters);
+  document.getElementById('f-clear-empty')?.addEventListener('click', clearFilters);
 </script>

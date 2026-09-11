@@ -24,9 +24,25 @@ const fmtDate = (iso: string) =>
   new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(new Date(iso));
 ---
 
-<section class="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+<div class="xl:grid xl:grid-cols-[160px_56rem_160px] xl:justify-center xl:gap-4">
+  <AdSlot
+    slotId="events-side-1"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+  <section class="mx-auto max-w-4xl px-4 py-16 sm:px-6">
   <h1 class="font-display text-4xl font-semibold text-graphite-100 sm:text-5xl">{t('events.title')}</h1>
   <p class="mt-4 max-w-2xl text-graphite-400">{t('events.lead')}</p>
+
+  <AdSlot
+    slotId="events-top-1"
+    size={{ w: 320, h: 50 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
 
   <h2 class="mt-12 font-display text-2xl font-semibold text-graphite-100">{t('events.upcoming')}</h2>
   <div class="mt-6 grid gap-4 sm:grid-cols-2">
@@ -77,9 +93,33 @@ const fmtDate = (iso: string) =>
     )
   }
 
-  <AdSlot slotId="events-1" format="auto" locale={locale} />
-
   <p class="mt-8 text-xs leading-relaxed text-graphite-500">
     ℹ {t('events.lead')}
   </p>
 </section>
+
+  <AdSlot
+    slotId="events-side-2"
+    size={{ w: 160, h: 600 }}
+    media="(min-width: 1280px)"
+    locale={locale}
+    class="sticky top-24 hidden w-fit self-start xl:block"
+  />
+</div>
+
+<div class="pb-4">
+  <AdSlot
+    slotId="events-bottom-desktop-1"
+    size={{ w: 970, h: 90 }}
+    media="(min-width: 1024px)"
+    locale={locale}
+    class="mx-auto w-fit hidden lg:block"
+  />
+  <AdSlot
+    slotId="events-bottom-mobile-1"
+    size={{ w: 320, h: 100 }}
+    media="(max-width: 1023.98px)"
+    locale={locale}
+    class="mx-auto w-fit lg:hidden"
+  />
+</div>

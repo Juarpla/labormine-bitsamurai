@@ -124,9 +124,20 @@ PRODUCT.md                    durable product truth (impeccable init)
   stale values in old visitors' browsers are simply ignored.
 - Job feed order: tiers (`tierOf`) then `postedAt desc`. Tier 3 foreign listings
   are shown only with a reported-visa or international-candidate signal.
-- Ads: `AdSlot` slot ids are per page/section (`home-*`, `jobs-infeed-*`,
-  `job-detail-1`, `pathways-1`, `events-1`). Placeholders render in dev/absent
-  client id; real ads need `PUBLIC_ADSENSE_CLIENT` + prod + publisher ID in
-  `public/ads.txt` (see `docs/ADSENSE-CHECKLIST.md`).
+- Ads: `AdSlot` slot ids are per page/section (`home-*`; jobs: `jobs-top-1`,
+  `jobs-side-1/2`, `jobs-bottom-desktop-1`, `jobs-bottom-mobile-1`;
+  `job-detail-1`; pathways: `pathways-top-1`, `pathways-side-1/2`,
+  `pathways-bottom-desktop-1`, `pathways-bottom-mobile-1`; events: `events-top-1`,
+  `events-side-1/2`, `events-bottom-desktop-1`, `events-bottom-mobile-1`;
+  guías (shared by index + detail pages): `guias-top-1`, `guias-side-1/2`,
+  `guias-bottom-desktop-1`, `guias-bottom-mobile-1`; about: `about-bottom-desktop-1`,
+  `about-bottom-mobile-1`). /jobs, /visa-pathways, /eventos and /guias share the
+  same always-on distribution: fixed 320×50 top (mobile/tablet), 970×90 bottom
+  (desktop ≥lg) or 320×100 (mobile/tablet), sticky 160×600 side rails (desktop
+  ≥1280px) around a centered content column; /about carries only the horizontal
+  bottom pair, no rails. Slots sit outside the filterable grid and are never
+  hidden after serving. Placeholders render in dev/absent client id; real ads
+  need `PUBLIC_ADSENSE_CLIENT` + prod + publisher ID in `public/ads.txt` (see
+  `docs/ADSENSE-CHECKLIST.md`).
 - Deployment: Cloudflare Pages. Feed freshness via GitHub Actions cron
   (`.github/workflows/refresh-jobs.yml`) committing `src/data/jobs.json`.

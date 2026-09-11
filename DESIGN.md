@@ -60,8 +60,11 @@ filled amber (primary) or graphite outline (secondary). Never tint text below
    always carry the `.ad-label` ("Ad / Anuncio / Anúncio").
 2. Never place an ad such that it could be mistaken for the *next* job card in
    reading order; ads never show fabricated job titles.
-3. Density cap: ≤ 1 ad per ~9 job cards; ≤ 2 ads per home chapter sequence; 1
-   in-content ad on detail pages. No interstitials.
+3. Density cap: /jobs uses fixed, always-on slots **outside** the filterable grid —
+   never inside `#jobs-grid`, never hidden after serving, even at 0 results
+   (mobile/tablet: 320×50 above the filters + 320×100 after the list; desktop
+   ≥lg: 970×90 after the list; ≥1280px adds sticky 160×600 side rails). ≤ 2 ads
+   per home chapter sequence; 1 in-content ad on detail pages. No interstitials.
 4. Placeholder (no publisher id / dev): neutral labeled box — layout is testable
    before AdSense approval, and the label contract is visible in every state.
 
@@ -73,7 +76,9 @@ filled amber (primary) or graphite outline (secondary). Never tint text below
 | `Header/Footer.astro` | nav (empleos, rutas, eventos, guías) + CTA / legal links + disclosures |
 | `Chapter.astro` | scrollytelling section (sticky text + reveal content) |
 | `JobCard.astro` | server-rendered job card (tier badges, salary chip, international badge) |
-| `AdSlot.astro` | labeled AdSense unit (in-feed/in-content; siempre "Anuncio") |
+| `SectorPulse.astro` | "El pulso del sector" — indicator charts (server-rendered SVG lines/bars, no JS). Card grid `sm:grid-cols-2 lg:grid-cols-6`: compact charts span 2, context charts span 3 (`sm:col-span-2` keeps tablet full-width, no orphan rows). Chips reuse the JobCard badge vocabulary; every card cites `officialUrl` + "verificado {fecha}" |
+| `StocksPulse.astro` | "Cómo van las mineras en la bolsa" — listed-mining-companies quotes (Yahoo Finance, monthly). Analysis strip (ganadora / rezagada / cerca del máximo) + company cards in `sm:grid-cols-2 lg:grid-cols-4` (8 cards = 2 clean rows): 12-month sparkline, price + 1y chip, 52-week range gauge (min–max track with today's marker), mines in Peru. Always carries "no es asesoría de inversión" |
+| `AdSlot.astro` | labeled AdSense unit (responsive or fixed-size, breakpoint-gated; siempre "Anuncio") |
 | `JobDrawer.astro` | quick-view `<dialog>` with apply-at-source CTA |
 | `pages/HomeView` | 8-chapter tiered home (Perú → eventos → remoto → extranjero → pathways → guías) |
 | `pages/JobsView` | full list ordered by tiers + client filters (country/category/type/visa/search) |

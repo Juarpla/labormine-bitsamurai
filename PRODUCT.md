@@ -63,6 +63,21 @@ editados), salarios solo si los declara la fuente, y rutas de visa con
 Capacidades confirmadas:
 
 - Feed diario de empleos con filtro de nicho estricto.
+- Pulso del sector en `/`: gráficos de indicadores oficiales — precio de
+  cobre/oro (Pink Sheet del World Bank, mensual), empleo minero formal (BEM
+  de MINEM, curado a mano con `officialUrl` + `lastVerifiedAt`),
+  departamentos con unidades metálicas en producción (Mapa de Unidades MINEM,
+  anual) y ofertas por semana (computada del feed propio en build). Refresco
+  mensual por CI (`refresh-indicators.yml`, día 4); si una fuente falla, sus
+  datos y fecha previos envejecen visiblemente ("verificado {fecha}") sin
+  inventar nada. Fuentes y método: `docs/MINING-DATA-SOURCES.md`.
+- Bolsa de las mineras en `/` (`StocksPulse.astro`): cotizaciones anuales de
+  las 8 mineras con minas en Perú (Yahoo Finance, ADR en USD; nombres
+  comerciales y minas curados a mano), refresco mensual en el mismo cron del
+  pulso. Vista de análisis sin jerga: ganadora/rezagada del año, cuántas
+  cotizan a menos de 10% de su máximo anual, rango de 52 semanas como
+  medidor. Siempre con "no es asesoría de inversión"; Yahoo es agregador, no
+  fuente primaria.
 - Páginas: `/` (capítulos por tier), `/jobs` (feed por tiers + filtros),
   `/visa-pathways`, `/eventos`, `/guias` (2 guías), `/faq`, `/about`,
   `/privacy`, `/terms`, `/contact`, y detalle de cada empleo con JobPosting
@@ -103,6 +118,15 @@ por decisión del owner; la ruta de visa de Chile queda como referencia.
   2026-09-08/10).
 - Eventos curados a mano: `src/data/events.json` (fuente oficial obligatoria;
   nunca scraped).
+- Indicadores del sector: `src/data/indicators.json` (series cobre/oro +
+  ranking de departamentos con `sourceId`; bloque `sector` curado a mano) —
+  semilla verificada 2026-09-10 contra Pink Sheet y XLSX de MINEM;
+  investigación de fuentes en `docs/MINING-DATA-SOURCES.md` (GEOCATMIN queda
+  fuera del pipeline por cadena TLS rota del servicio on-prem; OECD no publica
+  precios de commodities).
+- Cotizaciones de mineras: `src/data/stocks.json` — 8 empresas con operaciones
+  en Perú (Yahoo Finance, semilla real 2026-09-10: NEXA +172%, NGLOY +54,8%);
+  empresa/minas curados en `scripts/ingest-stocks.mjs`.
 - Contenido propio: 2 guías + FAQ.
 
 **Ausencias que el trabajo futuro no debe fabricar**: sin investigación de

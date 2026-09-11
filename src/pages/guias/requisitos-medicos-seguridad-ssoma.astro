@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import AdSlot from '../../components/AdSlot.astro';
 import { useTranslations } from '../../lib/i18n';
 
 const locale = 'es' as const;
@@ -7,7 +8,15 @@ const t = useTranslations(locale);
 ---
 
 <Layout title="Requisitos médicos y de seguridad (SSOMA) para trabajar en mina — Labormin" description="Qué es el examen médico ocupacional, los certificados de seguridad y los documentos que piden las mineras y contratistas antes de contratar." locale={locale} path="/guias/requisitos-medicos-seguridad-ssoma">
-  <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+  <div class="xl:grid xl:grid-cols-[160px_48rem_160px] xl:justify-center xl:gap-4">
+    <AdSlot
+      slotId="guias-side-1"
+      size={{ w: 160, h: 600 }}
+      media="(min-width: 1280px)"
+      locale={locale}
+      class="sticky top-24 hidden w-fit self-start xl:block"
+    />
+    <article class="mx-auto max-w-3xl px-4 py-16 sm:px-6">
     <p class="text-xs font-semibold uppercase tracking-[0.25em] text-brand-500">Guía · Requisitos</p>
     <h1 class="mt-3 font-display text-4xl font-semibold leading-tight text-graphite-100 sm:text-5xl">
       Requisitos médicos y de seguridad (SSOMA) para trabajar en mina
@@ -15,6 +24,14 @@ const t = useTranslations(locale);
     <p class="mt-6 leading-relaxed text-graphite-200">
       En minería, la seguridad no es un trámite: es la condición para entrar a faena. Por eso los empleadores filtran primero por estos documentos. Tenerlos listos antes de postular te ahorra semanas y hace que tu candidatura pase el primer corte.
     </p>
+
+    <AdSlot
+      slotId="guias-top-1"
+      size={{ w: 320, h: 50 }}
+      media="(max-width: 1023.98px)"
+      locale={locale}
+      class="mx-auto w-fit lg:hidden"
+    />
 
     <h2 class="mt-10 font-display text-2xl font-semibold text-graphite-100">Examen médico ocupacional (EMO)</h2>
     <p class="mt-3 leading-relaxed text-graphite-300">
@@ -58,4 +75,29 @@ const t = useTranslations(locale);
       <a href="/faq" class="rounded-full border border-graphite-600 px-6 py-3 text-sm font-semibold text-graphite-100 hover:border-brand-500">Preguntas frecuentes</a>
     </div>
   </article>
+    <AdSlot
+      slotId="guias-side-2"
+      size={{ w: 160, h: 600 }}
+      media="(min-width: 1280px)"
+      locale={locale}
+      class="sticky top-24 hidden w-fit self-start xl:block"
+    />
+  </div>
+
+  <div class="pb-4">
+    <AdSlot
+      slotId="guias-bottom-desktop-1"
+      size={{ w: 970, h: 90 }}
+      media="(min-width: 1024px)"
+      locale={locale}
+      class="mx-auto w-fit hidden lg:block"
+    />
+    <AdSlot
+      slotId="guias-bottom-mobile-1"
+      size={{ w: 320, h: 100 }}
+      media="(max-width: 1023.98px)"
+      locale={locale}
+      class="mx-auto w-fit lg:hidden"
+    />
+  </div>
 </Layout>

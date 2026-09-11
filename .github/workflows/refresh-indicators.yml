@@ -1,0 +1,58 @@
+name: Refresh sector indicators
+
+on:
+  schedule:
+    - cron: '0 6 4 * *' # día 4 de cada mes 06:00 UTC — tras la actualización mensual del Pink Sheet (2.º día hábil)
+  workflow_dispatch: {}
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Fuentes verificadas: docs/MINING-DATA-SOURCES.md.
+      # Sin secrets: Pink Sheet (World Bank), MINEM (CDN gob.pe) y Yahoo Finance
+      # (endpoint público de gráficos) son descargas públicas.
+      - name: Ingest sector indicators
+        run: node scripts/ingest-indicators.mjs
+
+      # Cotizaciones de las mineras listadas — mismo ritmo mensual que el pulso.
+      - name: Ingest listed mining companies (Yahoo Finance)
+        run: node scripts/ingest-stocks.mjs
+
+      - name: Commit refreshed data (if changed)
+        run: |
+          git config user.name "labormin-bot"
+          git config user.email "bot@labormin.com"
+          changed=0
+          for f in src/data/indicators.json src/data/stocks.json; do
+            if [[ -n "$(git status --porcelain "$f")" ]]; then
+              git add "$f"
+              changed=1
+            fi
+          done
+          if [[ "$changed" == "1" ]]; then
+            git commit -m "chore(data): refresh sector indicators and listed-companies quotes"
+            git push
+          else
+            echo "No changes in sector data"
+          fi
+
+      # Solo si Cloudflare Pages NO está conectado vía Git; el push de arriba ya dispara el build.
+      - name: Trigger Cloudflare deploy hook (optional)
+        if: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK != '' }}
+        run: curl -sf -X POST "$CLOUDFLARE_DEPLOY_HOOK"
+        env:
+          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}

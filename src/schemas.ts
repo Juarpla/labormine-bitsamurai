@@ -86,7 +86,90 @@ export const EventFileSchema = z.object({
   events: z.array(EventSchema),
 });
 
+/** Punto mensual de una serie de indicadores (fecha YYYY-MM). */
+export const IndicatorPointSchema = z.object({
+  date: z.string(),
+  value: z.number(),
+});
+
+/** Serie de indicadores generada por scripts/ingest-indicators.mjs (cron mensual). */
+export const IndicatorSeriesSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  unit: z.string(),
+  sourceId: z.string(),
+  points: z.array(IndicatorPointSchema),
+});
+
+/** Ranking de unidades metálicas en producción por departamento (MINEM, anual). */
+export const DepartmentsSchema = z.object({
+  sourceId: z.string(),
+  label: z.string(),
+  totalMetallic: z.number(),
+  totalAll: z.number(),
+  rows: z.array(z.object({ name: z.string(), count: z.number() })),
+});
+
+/** Cifra curada a mano del empleo minero formal (BEM MINEM, mensual). */
+export const EmploymentStatSchema = z.object({
+  label: z.string(),
+  value: z.number(),
+  unit: z.string(),
+  period: z.string(),
+  changeYoYPct: z.number(),
+  breakdown: z.array(z.object({ label: z.string(), value: z.number() })),
+  note: z.string(),
+  officialUrl: z.string().url(),
+  lastVerifiedAt: z.string(),
+});
+
+export const IndicatorSourceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  officialUrl: z.string().url(),
+  lastVerifiedAt: z.string(),
+});
+
+export const IndicatorsFileSchema = z.object({
+  generatedAt: z.string(),
+  series: z.array(IndicatorSeriesSchema),
+  departments: DepartmentsSchema.nullable(),
+  sector: z.object({ employment: EmploymentStatSchema.nullable() }),
+  sources: z.array(IndicatorSourceSchema),
+});
+
+/** Cotización mensual de una minera listada (Yahoo Finance, ADR en USD).
+ *  name/ticker/exchange/metal/mines son CURADOS en scripts/ingest-stocks.mjs;
+ *  los números los produce la ingesta. */
+export const StockCompanySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  ticker: z.string(),
+  exchange: z.string(),
+  exchangeRef: z.string().nullable(),
+  metal: z.string(),
+  mines: z.string(),
+  currency: z.string(),
+  price: z.number(),
+  yearAgoClose: z.number(),
+  change1yPct: z.number().nullable(),
+  high52w: z.number().nullable(),
+  low52w: z.number().nullable(),
+  series: z.array(z.number()),
+});
+
+export const StocksFileSchema = z.object({
+  generatedAt: z.string(),
+  source: IndicatorSourceSchema,
+  companies: z.array(StockCompanySchema),
+});
+
 export type Job = z.infer<typeof JobSchema>;
 export type Salary = z.infer<typeof SalarySchema>;
 export type Pathway = z.infer<typeof PathwaySchema>;
 export type Event = z.infer<typeof EventSchema>;
+export type IndicatorSeries = z.infer<typeof IndicatorSeriesSchema>;
+export type IndicatorPoint = z.infer<typeof IndicatorPointSchema>;
+export type Departments = z.infer<typeof DepartmentsSchema>;
+export type EmploymentStat = z.infer<typeof EmploymentStatSchema>;
+export type StockCompany = z.infer<typeof StockCompanySchema>;

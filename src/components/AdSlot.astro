@@ -7,40 +7,80 @@ interface Props {
   slotId?: string;
   format?: 'auto' | 'fluid' | 'horizontal';
   layoutKey?: string;
+  /** Fixed-size unit: emits AdSense fixed-size code instead of the responsive unit. */
+  size?: { w: number; h: number };
+  /**
+   * Media query the unit belongs to (e.g. "(min-width: 1024px)"). The push is
+   * skipped when it does not match at load, so a unit never requests an ad
+   * outside its breakpoint (no served-but-hidden units, no wasted requests).
+   * Pair it with responsive visibility classes on `class`.
+   */
+  media?: string;
   class?: string;
 }
 
-const { locale = 'es', slotId, format = 'auto', layoutKey, class: className = '' } = Astro.props;
+const {
+  locale = 'es',
+  slotId,
+  format = 'auto',
+  layoutKey,
+  size,
+  media,
+  class: className = '',
+} = Astro.props;
 const t = useTranslations(locale);
 const client = import.meta.env.PUBLIC_ADSENSE_CLIENT as string | undefined;
 const live = Boolean(client && import.meta.env.PROD && slotId);
+
+const sizeLabel = size ? `${size.w} x ${size.h} px` : 'responsivo';
 ---
 
 <aside class:list={['ad-wrap my-8', className]} aria-label="Advertisement">
   <span class="ad-label">{t('ads.label')}</span>
   {
     live ? (
-      <ins
-        class="adsbygoogle block"
-        style="display:block"
-        data-ad-client={client}
-        data-ad-slot={slotId}
-        data-ad-format={format}
-        data-ad-layout-key={layoutKey}
-        data-full-width-responsive="true"
-      />
+      size ? (
+        <ins
+          class="adsbygoogle block"
+          style={`display:inline-block;width:${size.w}px;height:${size.h}px`}
+          data-ad-client={client}
+          data-ad-slot={slotId}
+        />
+      ) : (
+        <ins
+          class="adsbygoogle block"
+          style="display:block"
+          data-ad-client={client}
+          data-ad-slot={slotId}
+          data-ad-format={format}
+          data-ad-layout-key={layoutKey}
+          data-full-width-responsive="true"
+        />
+      )
     ) : (
-      <div class="flex h-24 items-center justify-center text-xs text-graphite-600 sm:h-32">
-        AdSense slot {slotId ?? '(unassigned)'} — {t('ads.label')} placeholder
+      <div
+        class:list={[
+          'flex items-center justify-center text-xs text-graphite-600',
+          size ? '' : 'h-24 sm:h-32',
+        ]}
+        style={size ? `width:${size.w}px;height:${size.h}px` : undefined}
+      >
+        {t('ads.label')} — {sizeLabel}
       </div>
     )
   }
 </aside>
 
 {
-  live && (
-    <script is:inline>
-      (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
-  )
+  live &&
+    (media ? (
+      <script
+        is:inline
+        set:html={`if (window.matchMedia(${JSON.stringify(media)}).matches) { (adsbygoogle = window.adsbygoogle || []).push({}); }`}
+      />
+    ) : (
+      <script is:inline>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    ))
 }
