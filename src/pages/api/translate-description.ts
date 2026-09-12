@@ -6,8 +6,11 @@ export const prerender = false;
  * chain (src/lib/llm.js — Mistral → Workers AI → OpenCode Go, env-driven)
  * returns structured JSON; the server renders deterministic, escaped HTML
  * (key-facts grid + bullet sections). Results are edge-cached by content hash
- * + lang and sent with a 24h browser cache. Fail-open: every error path
- * returns non-200 and the UI keeps showing the original description. */
+ * + lang and sent with a 24h browser cache; cache hits never touch the rate
+ * limiter. The per-IP hourly rate limit is env-tunable via
+ * RATE_LIMIT_PER_HOUR (default 30) and counts only cache misses. Fail-open:
+ * every error path returns non-200 and the UI keeps showing the original
+ * description. */
 
 /* NOTE: root-absolute import ('/src/lib/llm.js'), not '../lib/llm.js' — with
  * @astrojs/cloudflare (Astro 7.3), relative specifiers inside API routes fail
@@ -19,7 +22,7 @@ import { callProvider, extractJson, resolveChain, withFailover } from '/src/lib/
 const LANGS = new Set(['es', 'en', 'pt']);
 const LANG_NAMES: Record<string, string> = { es: 'Spanish', en: 'English', pt: 'Portuguese' };
 const MAX_HTML = 10_000;
-const RATE_LIMIT_PER_HOUR = 20;
+const DEFAULT_RATE_LIMIT_PER_HOUR = 30;
 const LLM_TIMEOUT_MS = 60_000;
 const CACHE_TTL = 60 * 60 * 24; // 24h — content is hash-keyed, so effectively immutable
 
@@ -89,7 +92,7 @@ async function cachePut(key: string, res: Response): Promise<void> {
   }
 }
 
-async function rateLimitOk(request: Request): Promise<boolean> {
+async function rateLimitOk(request: Request, limit: number): Promise<boolean> {
   try {
     if (typeof caches === 'undefined') return true;
     const ip = request.headers.get('cf-connecting-ip') || 'unknown';
@@ -97,7 +100,7 @@ async function rateLimitOk(request: Request): Promise<boolean> {
     const cache = caches.default;
     const hit = await cache.match(key);
     const count = Number(await hit?.text()) || 0;
-    if (count >= RATE_LIMIT_PER_HOUR) return false;
+    if (count >= limit) return false;
     await cache.put(
       key,
       new Response(String(count + 1), { headers: { 'cache-control': 'public, max-age=3600' } }),
@@ -276,15 +279,22 @@ export async function POST({ request }: { request: Request }) {
   if (!LANGS.has(lang)) return json({ error: 'invalid lang' }, 400);
   if (!html || html.length > MAX_HTML) return json({ error: 'invalid html' }, 400);
 
-  if (!(await rateLimitOk(request))) return json({ error: 'rate limited' }, 429);
-
+  /* Cache lookup runs BEFORE the rate limiter: a cached result is free and
+   * does not consume the per-IP hourly budget. The budget only counts real
+   * generation attempts (cache misses), failures included. */
   const cacheKey = `https://clarity.labormin.internal/v1/${lang}/${await sha256(`${lang}::${html}`)}`;
   const cached = await cacheGet(cacheKey);
   if (cached) return cached;
 
   const log = (m: string) => console.error(m);
-  const chain = resolveChain(await envGetter(), log);
+  const env = await envGetter();
+  const chain = resolveChain(env, log);
   if (chain.length === 0) return json({ error: 'no LLM provider configured' }, 503);
+
+  const limit = Number(env('RATE_LIMIT_PER_HOUR')) || DEFAULT_RATE_LIMIT_PER_HOUR;
+  if (!(await rateLimitOk(request, limit))) {
+    return json({ error: 'rate limited' }, 429, { 'retry-after': '3600' });
+  }
 
   let out: string;
   try {

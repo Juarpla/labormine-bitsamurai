@@ -190,9 +190,39 @@ dialog::backdrop {
   0%, 100% { opacity: 0.25; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-3px); }
 }
+/* Rate-limit modal: ✦ sparks */
+.lm-spark-main {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lm-spark-main 2.4s ease-in-out infinite;
+}
+@keyframes lm-spark-main {
+  0%, 100% { transform: scale(0.94) rotate(0deg); }
+  50% { transform: scale(1.08) rotate(8deg); }
+}
+.lm-spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lm-spark 1.8s ease-in-out infinite;
+}
+@keyframes lm-spark {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+#lm-clarity-limit[open] {
+  animation: lm-dialog-in 0.25s cubic-bezier(0.2, 0.6, 0.2, 1);
+}
+@keyframes lm-dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+}
 @media (prefers-reduced-motion: reduce) {
   .bot-float,
-  .lm-dot {
+  .lm-dot,
+  .lm-spark-main,
+  .lm-spark {
+    animation: none !important;
+  }
+  #lm-clarity-limit[open] {
     animation: none !important;
   }
 }
