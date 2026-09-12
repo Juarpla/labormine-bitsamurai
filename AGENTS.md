@@ -67,9 +67,9 @@ already running on localhost:4321-4326; otherwise it starts (and stops) its own.
    never enter the curated seed, and the curated seed always wins dedupe
    (normalized title + date, or same official-site host). Facebook contributes
    only **posts that announce a dated event** (`source: 'facebook-post'`,
-   page posts + keyword post search — FB Events channels were removed
-   2026-09-11); the post title is the verbatim first line of the text and the
-   date is regex-extracted (never LLM).
+   page posts — FB Events channels and the keyword post-search channel were
+   removed 2026-09-11 / 2026-09-12); the post title is the verbatim first
+   line of the text and the date is regex-extracted (never LLM).
 5. **AI description views are view-layer only.** Job *titles* may be
    auto-translated to **`es` only** at ingest via the multi-provider LLM chain in
    `src/lib/llm.js` (Mistral → Workers AI → OpenCode Go, ordered by

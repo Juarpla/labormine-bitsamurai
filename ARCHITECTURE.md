@@ -207,14 +207,15 @@ seed — the owner curates by hand. Sources:
 | --- | --- | --- |
 | Big-4 official sites (EXPOMINA, PERUMIN, CONAMIN, proEXPLO) | Keyless HTTPS fetch (0 cost); `apify/cheerio-scraper` per-site fallback if bots are blocked | JSON-LD `Event` + Spanish date regex; **only a complete date is published**, the matched phrase goes to `notes`; Peru city per site is curated metadata |
 | Facebook — curated pages (SENATI, TECSUP, Antamina, Cerro Verde, Nexa, Buenaventura) | `apify~facebook-posts-scraper` (≈$5–8/1k posts; `startUrls` + `resultsLimit` + `onlyPostsNewerThan: 6 months`) | **posts, not Events** (FB Events channels removed 2026-09-11): only posts announcing a dated event enter; title = verbatim first line; date regex-extracted from the text, matched phrase goes to `notes` |
-| Facebook — keyword post search (`feria laboral minería`…) | `powerai~facebook-post-search-scraper` ($4.99/1k; `query` + `maxResults ≥ 10`) | same parser and Peru/niche/EVENT gates; FB heavily throttles post search — the actor "succeeds" with 0 items (empty runs bill $0, so the script retries once); groups are phase 2 (noise validation pending) |
 
-Guards: shared FB budget `CAP_FB=30` posts/run (page-posts ≈$5–8/1k + search
-$2.99/1k → ≈$0.25/mo at weekly cadence; on top of ≈$2.09/mo reserved by the job
-actors; official-site fetch is keyless and free). Only posts with a complete
-future event date enter; titles verbatim first lines (no translation); TTL
-prunes past events after a 14-day grace period; if every source fails the
-previous file is kept and CI goes red.
+Guards: FB budget `CAP_FB=30` posts/run (page-posts ≈$5–8/1k → ≈$0.25/mo at
+weekly cadence; on top of ≈$2.09/mo reserved by the job actors;
+official-site fetch is keyless and free). The keyword post-search channel
+(easyapi→powerai) was removed 2026-09-12 after its 2-week validation gate —
+disappointing volume (FB throttles post search intermittently). Only posts
+with a complete future event date enter; titles verbatim first lines (no
+translation); TTL prunes past events after a 14-day grace period; if every
+source fails the previous file is kept and CI goes red.
 
 ## 4. Personalization & i18n (removed — niche decision 2026-09-10)
 

@@ -15,17 +15,13 @@
  *     un post que ANUNCIA UN EVENTO FECHADO (feria/charla): primera fecha
  *     completa futura del texto vía regex; la frase va verbatim a notes.
  *     FB bloqueó su búsqueda anónima el 2026-08-01, pero los posts de páginas
- *     públicas y la búsqueda de posts siguen funcionando vía actores.
- *  3) Facebook, BÚSQUEDA de publicaciones por keyword:
- *     actor easyapi~facebook-posts-search-scraper ($2.99/1k, searchQuery +
- *     maxPosts; 4.33★, 100% corridas OK). Mismo parser y filtros. Grupos
- *     públicos: fase 2 (requiere validar ruido aparte).
+ *     públicas siguen funcionando vía actores. La búsqueda de posts por
+ *     keyword (easyapi→powerai) se retiró 2026-09-12: volumen decepcionante
+ *     en la puerta de validación (puerta documentada en el docstring previo).
  *
  * Presupuesto (Apify Free plan $5/mes): los actores de jobs ya reservan
  * ≈$2.09/mo (linkedin/indeed/seek). CAP_FB=30 eventos/corrida semanal a
- * $13/1k ≈ $1.56/mo + centavos del fallback cheerio. Puerta de validación a
- * 2 semanas: si el volumen decepciona, ajustar cap/actores aquí (swap de 1
- * línea — los IDs de actor son constantes).
+ * $5–8/1k ≈ $0.25/mo + centavos del fallback cheerio.
  *
  * Reglas duras:
  *  - Nada se inventa: título verbatim de la fuente (sin traducción), fecha
@@ -37,7 +33,7 @@
  *  - zod valida antes de escribir (mantener en sync con src/schemas.ts
  *    ScrapedEventSchema; el build re-parsea y es la última instancia).
  *
- * Env: APIFY_TOKEN (habilita las fuentes 2 y 3; la 1 es keyless y corre igual).
+ * Env: APIFY_TOKEN (habilita la fuente 2; la 1 es keyless y corre igual).
  */
 
 import fs from 'node:fs';
@@ -51,11 +47,8 @@ const CURATED = path.join(ROOT, 'src/data/events.json');
 const TODAY = new Date().toISOString().slice(0, 10);
 
 /** Techo TOTAL de eventos de Facebook por corrida (presupuesto free plan).
- *  Split: las páginas curadas tienen prioridad pero la búsqueda por keyword
- *  siempre reserva su parte (datos reales 2026-09-11: 6 páginas devolvieron
- *  35 posts en 6 meses — prioridad estricta mataría el canal keyword). */
+ *  Con un solo canal FB (páginas curadas), el cap va íntegro a las páginas. */
 const CAP_FB = 30;
-const CAP_FB_PAGES = 20;
 /** Días de gracia antes de podar un evento pasado del archivo. */
 const TTL_GRACE_DAYS = 14;
 
@@ -76,13 +69,9 @@ const SITES_SEED = [
 ];
 
 /** IDs de actor swap-ables (formato username~actor-name, convención del repo;
- *  puerta de validación a 2 semanas). Precio verificado 2026-09-11:
- *  apify~facebook-posts-scraper ≈$5–8/1k posts (4.64★, 108k usuarios);
- *  powerai~facebook-post-search-scraper $4.99/1k (210k corridas; prueba en
- *  vivo con resultados reales de Perú — easyapi resultó muerto: 0 items hasta
- *  para 'empleo'). powerai exige maxResults ≥ 10. */
+ *  precio verificado 2026-09-11: apify~facebook-posts-scraper ≈$5–8/1k posts
+ *  (4.64★, 108k usuarios). */
 const FB_POSTS_ACTOR = 'apify~facebook-posts-scraper';
-const FB_POST_SEARCH_ACTOR = 'powerai~facebook-post-search-scraper';
 /** Ventana de escaneo de posts por página (el actor puede ir más atrás). */
 const FB_POSTS_WINDOW = '6 months';
 
@@ -99,9 +88,7 @@ const FB_PAGES_SEED = [
   { url: 'https://www.facebook.com/BuenaventuraPeru', label: 'Buenaventura' },
 ];
 
-const FB_KEYWORDS = ['feria laboral minería', 'convocatoria minera', 'feria de empleo minera'];
-
-/** Ciudades/departamentos/minas peruanas para filtrar eventos de keywords. */
+/** Ciudades/departamentos/minas peruanas para filtrar posts. */
 const PERU_RE =
   /\b(per[uú]|lima|arequipa|trujillo|cajamarca|cusco|cuzco|tacna|moquegua|ica|chimbote|huaraz|pasco|huancayo|abancay|piura|chiclayo|puno|ayacucho|huancavelica|callao|iquitos|pucallpa|juliaca|tarapoto|la\s+libertad|áncash|ancash|apurímac|apurimac|antamina|cerro\s+verde|las\s+bambas|quellaveco|yanacocha|buenaventura|marcona|toromocho|constancia)\b/i;
 
@@ -403,7 +390,7 @@ async function fetchOfficialSites() {
   return out;
 }
 
-// ── Fuente 2/3: Facebook publicaciones (páginas curadas + búsqueda), cap ────
+// ── Fuente 2: Facebook publicaciones de páginas curadas (cap) ──────────────
 
 /** Señal de nicho (minera/laboral) en el TEXTO del post. */
 const KEYWORD_TITLE_RE =
@@ -455,7 +442,7 @@ function cityFrom(loc) {
 }
 
 function scrapeEventsFromPosts(items) {
-  // El mismo post puede llegar por páginas Y por búsqueda → dedupe por id/URL.
+  // Dedupe por postId/URL (el actor puede devolver el mismo post dos veces).
   const seen = new Set();
   const accepted = [];
   for (const raw of items) {
@@ -488,66 +475,25 @@ function scrapeEventsFromPosts(items) {
   return accepted;
 }
 
-/** remaining = pool GLOBAL; cap = tope de este canal. El budget devuelto
- *  descuenta del pool global para que la búsqueda siempre reciba su parte. */
-async function fetchFbPagePosts(remaining, cap) {
+/** cap = tope de posts raw por corrida (factura por post; el actor puede
+ *  ignorar resultsLimit — 35 con cap 30 en la prueba real — por eso se
+ *  recorta al presupuesto tras la corrida). */
+async function fetchFbPagePosts(cap) {
   if (!process.env.APIFY_TOKEN) {
     console.log('ℹ Facebook (posts de páginas) skipped (set APIFY_TOKEN to enable)');
-    return { items: [], ok: true, skipped: true, budget: remaining };
+    return { items: [], ok: true, skipped: true };
   }
-  const n = Math.min(remaining, cap);
-  if (n <= 0) return { items: [], ok: true, budget: remaining };
+  if (cap <= 0) return { items: [], ok: true };
   const items = await runApifyActor(FB_POSTS_ACTOR, {
     startUrls: FB_PAGES_SEED.map((p) => ({ url: p.url })),
-    resultsLimit: n,
+    resultsLimit: cap,
     onlyPostsNewerThan: FB_POSTS_WINDOW,
   });
   // El actor puede ignorar resultsLimit (35 con cap 30 en la prueba real):
   // recortar al presupuesto para que la cuenta nunca quede negativa.
-  const capped = items.slice(0, n);
-  console.log(
-    `✓ fb-posts-pages → ${capped.length}/${items.length} posts (budget left ${Math.max(remaining - capped.length, 0)})`
-  );
-  return { items: capped, ok: true, budget: remaining - capped.length };
-}
-
-/** Búsqueda de publicaciones por keyword (factura por post; el cap cuenta
- *  posts raw). Los 3 keywords del seed se ejecutan en orden de prioridad.
- *  powerai exige maxResults ≥ 10 → el canal solo corre con presupuesto ≥ 10.
- *  La búsqueda puede devolver posts de grupos públicos; el gate EVENT_RE +
- *  Perú decide qué entra (fase 2 = rastrear grupos específicos). */
-async function fetchFbPostSearch(remaining, cap) {
-  if (!process.env.APIFY_TOKEN) {
-    console.log('ℹ Facebook (búsqueda de posts) skipped (set APIFY_TOKEN to enable)');
-    return { items: [], ok: true, skipped: true, budget: remaining };
-  }
-  const n = Math.min(remaining, cap);
-  if (n < 10) {
-    console.log(`ℹ Facebook (búsqueda de posts) necesita presupuesto ≥ 10 (tiene ${n})`);
-    return { items: [], ok: true, budget: remaining };
-  }
-  const items = [];
-  let spent = 0;
-  for (const kw of FB_KEYWORDS) {
-    if (spent >= n) break;
-    // FB raciona la búsqueda y el actor "termina OK" con 0 items (probado en
-    // vivo 2026-09-11). Las corridas vacías NO facturan (pay-per-result) →
-    // un reintento es gratis y recupera corridas racionadas.
-    let batch = [];
-    for (let attempt = 0; ; attempt++) {
-      batch = await runApifyActor(FB_POST_SEARCH_ACTOR, {
-        query: kw,
-        maxResults: Math.max(10, Math.min(n - spent, 30)),
-      });
-      if (batch.length > 0 || attempt >= 1) break;
-      console.log(`  · "${kw}" devolvió 0 (FB raciona la búsqueda) — reintento en 15s`);
-      await sleep(15000);
-    }
-    spent += batch.length;
-    items.push(...batch);
-    console.log(`✓ fb-posts-search:"${kw}" → ${batch.length} posts (budget left ${Math.max(remaining - spent, 0)})`);
-  }
-  return { items, ok: true, budget: remaining - spent };
+  const capped = items.slice(0, cap);
+  console.log(`✓ fb-posts-pages → ${capped.length}/${items.length} posts`);
+  return { items: capped, ok: true };
 }
 
 // ── Ejecución ───────────────────────────────────────────────────────────────
@@ -583,25 +529,17 @@ try {
   console.error(`✗ fuente webs-oficiales completa → ${e.message}`);
 }
 
-// Fuente 2/3 — Facebook publicaciones (cap compartido; un throw por actor no mata a la otra)
-let fbRemaining = CAP_FB;
-const fbPostRaw = [];
-const FB_SOURCES = [
-  ['fb-posts-pages', fetchFbPagePosts, CAP_FB_PAGES], // páginas: prioridad, cap propio
-  ['fb-posts-keywords', fetchFbPostSearch, Infinity], // búsqueda: llena el resto
-];
-for (const [name, fn, cap] of FB_SOURCES) {
-  try {
-    const r = await fn(fbRemaining, cap);
-    fbRemaining = r.budget;
-    if (!r.skipped) {
-      okSources++;
-      fbPostRaw.push(...(r.items ?? []));
-    }
-  } catch (e) {
-    errors.push(`${name}: ${e.message}`);
-    console.error(`✗ ${name} → ${e.message}`);
+// Fuente 2 — Facebook publicaciones de páginas curadas
+let fbPostRaw = [];
+try {
+  const r = await fetchFbPagePosts(CAP_FB);
+  if (!r.skipped) {
+    okSources++;
+    fbPostRaw = r.items ?? [];
   }
+} catch (e) {
+  errors.push('fb-posts-pages: ' + e.message);
+  console.error(`✗ fb-posts-pages → ${e.message}`);
 }
 
 // Si NO hubo ninguna fuente operativa: conservar archivo anterior y salir en rojo.

@@ -1,5 +1,5 @@
 {
   "_comment": "Sección 'Ferias y reclutamiento': eventos detectados automáticamente por scripts/ingest-events.mjs (webs oficiales de las ferias grandes + publicaciones de Facebook que anuncian un evento fechado). NUNCA se inventa: solo entra lo que la fuente devolvió con fecha completa y futura; en los posts el título es la primera línea del texto verbatim y la frase de la fecha va a notes. Nivel de confianza menor que src/data/events.json (curado a mano): la UI siempre muestra el badge 'Agregado automáticamente' y el CTA 'verificar con el organizador'. El seed curado siempre gana el dedup (título normalizado + fecha, u host de officialUrl). TTL: el script poda lo pasado (endDate/date < hoy − 14 días).",
-  "generatedAt": "2026-09-11T18:27:39.822Z",
+  "generatedAt": "2026-09-12T07:09:35.741Z",
   "events": []
 }

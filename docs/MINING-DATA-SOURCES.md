@@ -505,23 +505,14 @@ publicación NO es la fecha del evento — nunca se confunden.
   `time`/`timestamp`. Precio ≈ $5–8/1k posts. Sin login. Seed: SENATI,
   TECSUP, Antamina, Cerro Verde, Nexa, Buenaventura (slugs verificados por
   HTTP 200 el 2026-09-11); extender en `FB_PAGES_SEED`.
-- **Búsqueda de posts por keyword** (`powerai~facebook-post-search-scraper`):
-  input verificado — `query` + `maxResults` (mínimo 10). $4.99/1k, pure
-  pay-per-result. 210k corridas. **Prueba en vivo 2026-09-11**: devuelve
-  resultados reales de Perú ("CONVOCATORIA MINERA – YAULI, JUNÍN",
-  "CONVOCATORIA MINERA EVS, UM Millotingo") — pero FB raciona la búsqueda y
-  el actor "termina OK" con 0 items de forma intermitente (corridas vacías
-  facturan $0, así que el script reintenta una vez). Queries: `feria laboral
-  minería`, `convocatoria minera`, `feria de empleo minera`; exige señal
-  minera/laboral, señal de EVENTO (feria|charla|jornada|congreso|… — los
-  posts de puro job-call NO entran, decisión 2026-09-11) y señal Perú
-  (virtual permitido). La búsqueda puede devolver posts de grupos públicos;
-  el gate decide qué entra. Grupos específicos ("Bolsa de trabajo minería
-  Perú"…): fase 2 con validación de ruido propia.
-- Ambos canales comparten el cap 30/corrida (páginas primero, búsqueda llena
-  el resto); dedupe intra-FB por postId/URL. Presupuesto posts ≈ $0.25/mo a
-  cadencia semanal → total global < $2.4/mo dentro del plan free ($5). Formato
-  de actor en la API: `username~actor-name` (¡tilde, no slash!).
+- **Búsqueda de posts por keyword** (`easyapi`→`powerai~facebook-post-search-scraper`):
+  RETIRADA el 2026-09-12 al cerrar la puerta de validación de 2 semanas —
+  volumen decepcionante (FB raciona la búsqueda: el actor "termina OK" con 0
+  items de forma intermitente y el señal-ruido no justificó el canal). El
+  histórico de la decisión está en el git de `scripts/ingest-events.mjs`.
+- Cap único FB: 30 posts/corrida para las páginas curadas. Presupuesto posts
+  ≈ $0.25/mo a cadencia semanal → total global < $2.4/mo dentro del plan free
+  ($5). Formato de actor en la API: `username~actor-name` (¡tilde, no slash!).
 
 `lastVerifiedAt: 2026-09-11` (4 webs oficiales verificadas; resoluciones
 oficiales citadas; estado del login-wall de Facebook documentado por los
