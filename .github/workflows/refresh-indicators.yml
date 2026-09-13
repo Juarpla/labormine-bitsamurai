@@ -50,9 +50,4 @@ jobs:
             echo "No changes in sector data"
           fi
 
-      # Solo si Cloudflare Pages NO está conectado vía Git; el push de arriba ya dispara el build.
-      - name: Trigger Cloudflare deploy hook (optional)
-        if: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK != '' }}
-        run: curl -sf -X POST "$CLOUDFLARE_DEPLOY_HOOK"
-        env:
-          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+      # El deploy lo dispara Workers Builds (Git-connected) con cada push.

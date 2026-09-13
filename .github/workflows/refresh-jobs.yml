@@ -72,10 +72,4 @@ jobs:
             echo "No changes in jobs feed"
           fi
 
-      # Only needed if Cloudflare Pages is NOT connected via Git;
-      # when connected to the repo, the push above triggers the build.
-      - name: Trigger Cloudflare deploy hook (optional)
-        if: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK != '' }}
-        run: curl -sf -X POST "$CLOUDFLARE_DEPLOY_HOOK"
-        env:
-          CLOUDFLARE_DEPLOY_HOOK: ${{ secrets.CLOUDFLARE_DEPLOY_HOOK }}
+      # El deploy lo dispara Workers Builds (Git-connected) con cada push.
